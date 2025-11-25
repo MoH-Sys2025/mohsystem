@@ -18,8 +18,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-xl mb-4 shadow-sm">
-            <Activity className="w-7 h-7 text-white" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4 shadow-sm">
+            <img src="src/assets/malawilogo.svg" />
           </div>
           <h1 className="text-neutral-900 mb-2">Malawi Outbreak Response System</h1>
           <p className="text-neutral-500">Healthcare Workforce Management Platform</p>
