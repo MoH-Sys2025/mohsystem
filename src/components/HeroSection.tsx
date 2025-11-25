@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { ImageWithFallback } from '../../../../gfge/src/components/figma/ImageWithFallback.tsx';
+import { ImageWithFallback } from '@/components/figma/ImageWithFallback.tsx';
 
 const rooms = [
   {

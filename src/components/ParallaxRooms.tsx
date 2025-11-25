@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ImageWithFallback } from '../../../../gfge/src/components/figma/ImageWithFallback.tsx';
+import { ImageWithFallback } from '@/components/figma/ImageWithFallback.tsx';
 
 const rooms = [
   {
@@ -109,7 +109,10 @@ export function ParallaxRooms() {
           {rooms.map((room, index) => (
             <div
               key={room.id}
-              ref={(el) => (cardRefs.current[index] = el)}
+              ref={(el) => {
+                  cardRefs.current[index] = el;
+              }}
+
               className={`flex flex-col ${
                 index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
               } gap-8 lg:gap-12 items-center`}

@@ -1,15 +1,16 @@
-import { BarChart, TrendingUp, TrendingDown } from 'lucide-react';
+import React from "react";
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
   value: string;
   change: string;
   trend: 'up' | 'down';
-  icon: BarChart;
+  icon: React.ElementType
   color: 'emerald' | 'blue' | 'amber';
 }
 
-export function StatCard({ title, value, change, trend, icon: Icon, color }: StatCardProps) {
+export function StatCard({ title, value, change, trend, icon: Icon }: StatCardProps) {
   const trendColor = trend === 'up' ? 'text-emerald-600' : 'text-red-600';
 
   return (

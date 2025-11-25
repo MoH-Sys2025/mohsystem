@@ -1,4 +1,4 @@
-import { Boxes, Check, Settings } from 'lucide-react';
+import { Boxes, Settings } from 'lucide-react';
 
 export function Integrations() {
   const integrations = [

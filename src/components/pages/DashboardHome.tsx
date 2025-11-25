@@ -1,4 +1,4 @@
-import { Users, UserCheck, AlertTriangle, TrendingUp, MapPin, Activity } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, TrendingUp } from 'lucide-react';
 import { StatCard } from '../StatCard';
 import { ActivityFeed } from '../ActivityFeed';
 import { DeploymentMap } from '../DeploymentMap';

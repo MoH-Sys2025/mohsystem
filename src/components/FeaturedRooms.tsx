@@ -1,5 +1,5 @@
-import { ImageWithFallback } from '../../../../gfge/src/components/figma/ImageWithFallback.tsx';
-import { Users, Maximize, Wifi } from 'lucide-react';
+import { ImageWithFallback } from '@/components/figma/ImageWithFallback.tsx';
+import { Users, Maximize } from 'lucide-react';
 
 const featuredRooms = [
   {

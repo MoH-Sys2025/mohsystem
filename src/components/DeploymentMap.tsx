@@ -1,5 +1,3 @@
-import { MapPin } from 'lucide-react';
-
 export function DeploymentMap() {
   const deployments = [
     { district: 'Lilongwe', workers: 45, status: 'active', lat: 35, lng: 40 },
