@@ -7,7 +7,6 @@ import {
   GraduationCap, 
   Award,
   Settings,
-  Activity,
   LogOut
 } from 'lucide-react';
 

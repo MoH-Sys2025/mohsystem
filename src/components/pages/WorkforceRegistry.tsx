@@ -473,7 +473,8 @@ export function WorkforceRegistry() {
                             {selectedFilter && filterValue && (
                                 <div className="flex items-center justify-between">
         <span className="text-sm text-neutral-700">
-          {filterOptions.find((o) => o.key === selectedFilter).label}:{" "}
+          {filterOptions.find((o) => o.key === selectedFilter)?.label ?? ''}:
+:{" "}
             <strong>{filterValue}</strong>
         </span>
                                     <button
