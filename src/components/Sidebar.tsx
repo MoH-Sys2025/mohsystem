@@ -33,7 +33,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
       <div className="p-6 border-b border-neutral-200">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center">
-            <img src="src/assets/malawilogo.svg" />
+              <img src="src/assets/logo.png" alt="logo" />
           </div>
           <div>
             <div className="text-neutral-900">MORS</div>
