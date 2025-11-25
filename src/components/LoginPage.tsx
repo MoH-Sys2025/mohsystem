@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Activity } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: () => void;
