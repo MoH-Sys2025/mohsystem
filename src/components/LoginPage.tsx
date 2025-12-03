@@ -18,7 +18,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4 shadow-sm">
-            <img src="../../public/logo.png" alt="logo" />
+            <img src="/logo.png" alt="logo" />
           </div>
           <h1 className="text-neutral-900 mb-2">Malawi Outbreak Response System</h1>
           <p className="text-neutral-500">Healthcare Workforce Management Platform</p>

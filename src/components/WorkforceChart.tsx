@@ -1,5 +1,4 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
 export function WorkforceChart() {
   const data = [
     { month: 'Jan', deployed: 120, available: 180 },
@@ -11,7 +10,7 @@ export function WorkforceChart() {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-6">
+    <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
       <div className="mb-6">
         <h2 className="text-neutral-900 mb-1">Workforce Deployment Trends</h2>
         <p className="text-sm text-neutral-500">Monthly deployment vs availability statistics</p>
@@ -42,8 +41,8 @@ export function WorkforceChart() {
                 fontSize: '12px',
               }}
             />
-            <Bar dataKey="deployed" fill="#10b981" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="available" fill="#d4d4d4" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="deployed" fill="#10b981" radius={[40, 40, 40, 40]} />
+            <Bar dataKey="available" fill="#d4d4d4" radius={[40, 40, 40, 40]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

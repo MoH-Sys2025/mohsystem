@@ -2,7 +2,7 @@ import { Bell, Lock, User} from 'lucide-react';
 
 export function Settings() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
       {/* Header */}
       <div>
         <h1 className="text-neutral-900 mb-2">Settings</h1>

@@ -58,7 +58,7 @@ export function ActivityFeed() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-6">
+    <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
       <div className="mb-6">
         <h2 className="text-neutral-900 mb-1">Recent Activity</h2>
         <p className="text-sm text-neutral-500">Latest system updates and actions</p>

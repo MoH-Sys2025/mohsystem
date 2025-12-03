@@ -8,14 +8,14 @@ export function DeploymentMap() {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-6">
+    <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
       <div className="mb-6">
         <h2 className="text-neutral-900 mb-1">Active Deployment Map</h2>
         <p className="text-sm text-neutral-500">Healthcare worker distribution across districts</p>
       </div>
 
       <div className="relative bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl border border-neutral-200 h-96 overflow-hidden">
-        
+
         {/* Map Markers */}
         {deployments.map((deployment, index) => (
           <div
@@ -26,7 +26,7 @@ export function DeploymentMap() {
             <div className={`w-4 h-4 rounded-full ${
               deployment.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'
             } ring-4 ring-white shadow-lg animate-pulse`}></div>
-            
+
             {/* Tooltip */}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               <div className="bg-neutral-900 text-white px-3 py-2 rounded-lg shadow-lg whitespace-nowrap text-sm">

@@ -51,7 +51,7 @@ export function Integrations() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-2 md:p-6">
       {/* Header */}
       <div>
         <h1 className="text-neutral-900 mb-2">Integrations</h1>
@@ -79,7 +79,7 @@ export function Integrations() {
         <h2 className="text-neutral-900 mb-4">Connected Systems</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {integrations.map((integration, index) => (
-            <div key={index} className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div key={index} className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
               <div className="flex items-start gap-4 mb-4">
                 <div className={`w-12 h-12 ${integration.logo} rounded-xl flex items-center justify-center text-white flex-shrink-0`}>
                   <Boxes className="w-6 h-6" />
@@ -119,7 +119,7 @@ export function Integrations() {
         <h2 className="text-neutral-900 mb-4">Available Integrations</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {availableIntegrations.map((integration, index) => (
-            <div key={index} className="bg-white rounded-xl border border-neutral-200 p-6 hover:shadow-md transition-shadow">
+            <div key={index} className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6 hover:shadow-md transition-shadow">
               <div className={`w-12 h-12 ${integration.logo} rounded-xl flex items-center justify-center text-white mb-4`}>
                 <Boxes className="w-6 h-6" />
               </div>

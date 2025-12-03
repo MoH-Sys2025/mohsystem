@@ -29,7 +29,7 @@ export function AlertsPanel() {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-6">
+    <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
       <div className="mb-6">
         <h2 className="text-neutral-900 mb-1">Active Alerts</h2>
         <p className="text-sm text-neutral-500">Critical updates and notifications</p>

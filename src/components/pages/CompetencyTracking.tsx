@@ -66,7 +66,7 @@ export function CompetencyTracking() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-2 md:p-6">
       {/* Header */}
       <div>
         <h1 className="text-neutral-900 mb-2">Competency Tracking</h1>
@@ -116,7 +116,7 @@ export function CompetencyTracking() {
             const colors = getColorClasses();
 
             return (
-              <div key={index} className="bg-white rounded-xl border border-neutral-200 p-6">
+              <div key={index} className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-neutral-900 mb-1">{area.name}</h3>
@@ -157,7 +157,7 @@ export function CompetencyTracking() {
         <h2 className="text-neutral-900 mb-4">Worker Competency Profiles</h2>
         <div className="space-y-4">
           {workers.map((worker, index) => (
-            <div key={index} className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div key={index} className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-medium">
@@ -195,7 +195,7 @@ export function CompetencyTracking() {
       </div>
 
       {/* Skill Gap Analysis */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
         <h2 className="text-neutral-900 mb-4">Skill Gap Analysis</h2>
         <div className="space-y-4">
           <div>

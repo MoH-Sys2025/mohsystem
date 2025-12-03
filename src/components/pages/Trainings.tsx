@@ -1,6 +1,11 @@
 import { GraduationCap, Calendar, Users, Award, Plus } from 'lucide-react';
+import {JSX} from "react";
 
-export function Trainings() {
+interface TrainingProps {
+    onNavigate: (page: string) => void;
+}
+
+export function Trainings({onNavigate}: TrainingProps): JSX.Element {
   const upcomingTrainings = [
     {
       title: 'Emergency Response Protocol',
@@ -50,14 +55,14 @@ export function Trainings() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-neutral-900 mb-2">Trainings</h1>
           <p className="text-neutral-500">Manage training programs and certifications for healthcare workers</p>
         </div>
-        <button className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 flex items-center gap-2 transition-colors shadow-sm">
+        <button onClick={()=>onNavigate("form trainings")} className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 flex items-center gap-2 transition-colors shadow-sm">
           <Plus className="w-5 h-5" />
           Create Training
         </button>

@@ -1,6 +1,11 @@
 import { Send, MapPin, Users, Calendar, MoreVertical } from 'lucide-react';
+import {JSX} from "react";
 
-export function Deployments() {
+interface DeployProps {
+    onNavigate: (page: string) => void;
+}
+
+export function Deployments({onNavigate}: DeployProps): JSX.Element {
   const deployments = [
     {
       id: 'DEP-2024-045',
@@ -45,14 +50,14 @@ export function Deployments() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-neutral-900 mb-2">Deployments</h1>
           <p className="text-neutral-500">Manage healthcare worker deployments and outbreak responses</p>
         </div>
-        <button className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 flex items-center gap-2 transition-colors shadow-sm">
+        <button onClick={()=>onNavigate("deploy form")} className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 flex items-center gap-2 transition-colors shadow-sm">
           <Send className="w-5 h-5" />
           New Deployment
         </button>

@@ -9,7 +9,12 @@ import { Deployments } from '@/components/pages/Deployments.tsx';
 import { Trainings } from '@/components/pages/Trainings.tsx';
 import { CompetencyTracking } from '@/components/pages/CompetencyTracking.tsx';
 import { Settings } from '@/components/pages/Settings.tsx';
-
+import HealthWorkerProfile from "@/components/pages/Profile.tsx";
+import CreateTrainingWizard from "@/components/pages/CreateTrainingForm.tsx";
+import NewDeploymentForm from "@/components/pages/DeploymentForm.tsx";
+import Notifications from "@/components/pages/Notifications.tsx";
+import AddWorkerWizard from "@/components/pages/AddHCW.tsx";
+import AddHealthyFacility from "@/components/pages/AddHealthFacility.tsx";
 interface DashboardProps {
   onLogout: () => void;
 }
@@ -20,35 +25,55 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <DashboardHome />;
+        return <DashboardHome onNavigate={setCurrentPage} />;
+        case 'deploy form':
+            return <NewDeploymentForm onSuccess={undefined} />;
       case 'workforce':
-        return <WorkforceRegistry />;
+        return <WorkforceRegistry onNavigate={setCurrentPage}  />;
       case 'documents':
         return <Documents />;
       case 'integrations':
         return <Integrations />;
+        case 'add facility':
+            return <AddHealthyFacility onNavigate={setCurrentPage} />;
+        case 'add worker':
+            return <AddWorkerWizard onNavigate={setCurrentPage} />;
+        case 'notifications':
+            return <Notifications />;
       case 'deployments':
-        return <Deployments />;
+        return <Deployments onNavigate={setCurrentPage} />;
       case 'trainings':
-        return <Trainings />;
+        return <Trainings onNavigate={setCurrentPage} />;
       case 'competency':
         return <CompetencyTracking />;
       case 'settings':
         return <Settings />;
+      case 'worker profile':
+        return <HealthWorkerProfile />;
+        case 'form trainings':
+            return <CreateTrainingWizard onCancel={()=>setCurrentPage('trainings')} onPublish={undefined} />;
       default:
         return <DashboardHome />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} onLogout={onLogout} />
-      <div className="pl-64">
-        <TopNavbar />
-        <main className="p-6">
-          {renderPage()}
-        </main>
+      <div className="min-h-screen bg-neutral-50 flex">
+
+          {/* Sidebar (fixed) */}
+          <Sidebar
+              currentPage={currentPage}
+              onNavigate={setCurrentPage}
+              onLogout={onLogout}
+          />
+
+          {/* Main Content with left padding */}
+          <div className="flex-1 pl-16 lg:pl-64">
+              <TopNavbar />
+              {renderPage()}
+          </div>
+
       </div>
-    </div>
+
   );
 }
