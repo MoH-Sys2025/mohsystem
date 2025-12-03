@@ -1,7 +1,6 @@
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, CalendarDays, Building2, Briefcase } from "lucide-react";
-import {JSX} from "react";
+import { Building2, Briefcase } from "lucide-react";
+import type { JSX } from "react";
 
 interface DeployProps {
     imgSrc: string;

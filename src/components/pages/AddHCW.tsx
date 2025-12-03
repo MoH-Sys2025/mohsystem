@@ -13,19 +13,49 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import {api, getAge} from "@/supabase/Functions";
-import {districts} from "@/supabase/districts.tsx";
+import { api, getAge } from "@/supabase/Functions";
+import { districts } from "@/supabase/districts.tsx";
+
+/* ---------------------------------------------------
+   TYPES
+--------------------------------------------------- */
+
+type FormType = {
+    first_name: string;
+    last_name: string;
+    other_names: string;
+    gender: string;
+    date_of_birth: string;
+    phone: string;
+    email: string;
+    cadre_id: string;
+    current_district_id: string;
+    employment_status: string;
+    hire_date: string;
+    exit_date: string;
+    metadata: {
+        district: string;
+        competencies: string[];
+        age: string | number | null;
+        worker_status: string[];
+        [key: string]: any;
+    };
+    qualifications: string[];
+    [key: string]: any;
+};
 
 interface AddWorkerProps {
     onNavigate: (page: string) => void;
 }
 
-export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
+export default function AddWorkerWizard({ onNavigate }: AddWorkerProps) {
     const [step, setStep] = useState(0);
     const [saving, setSaving] = useState(false);
-    const [cadres, setCadres] = useState([]);
+    const [cadres, setCadres] = useState<any[]>([]);
 
-    // Get Cadres
+    /* ---------------------------------------------------
+       LOAD CADRES
+    --------------------------------------------------- */
     useEffect(() => {
         async function loadCadres() {
             const data = await api.listCadres();
@@ -34,11 +64,10 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
         loadCadres();
     }, []);
 
-
     /* ---------------------------------------------------
        FORM STATE
     --------------------------------------------------- */
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<FormType>({
         first_name: "",
         last_name: "",
         other_names: "",
@@ -48,14 +77,14 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
         email: "",
         cadre_id: "",
         current_district_id: "",
-        employment_status: "Employed", // DEFAULT + LOCKED
+        employment_status: "Employed",
         hire_date: "",
         exit_date: "",
         metadata: {
             district: "",
             competencies: [],
             age: "",
-            worker_status: ["Employed", "Available"], // DEFAULT + LOCKED
+            worker_status: ["Employed", "Available"],
         },
         qualifications: [],
     });
@@ -63,33 +92,28 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
     /* ---------------------------------------------------
        UPDATE HELPER
     --------------------------------------------------- */
-    function update(path, value) {
+    function update(path: string, value: any) {
         setForm((prev) => {
-            const clone = structuredClone(prev);
-            let ref = clone;
+            const clone: any = structuredClone(prev);
 
-            // Special case: when date_of_birth changes → recalc age
+            // If date_of_birth, also update age
             if (path === "date_of_birth") {
-                return {
-                    ...prev,
-                    date_of_birth: value,
-                    metadata: {
-                        ...prev.metadata,
-                        age: getAge(value),
-                    }
-                };
-            }else if (path === "current_district_id") {
-                return {
-                    ...prev,
-                    current_district_id: value,
-                    metadata: {
-                        ...prev.metadata,
-                        district: districts.find((d) => d.id === value)?.name || "Unknown District",
-                    }
-                };
+                clone.date_of_birth = value;
+                clone.metadata.age = getAge(value);
+                return clone;
+            }
+
+            // If district changes, update district name
+            if (path === "current_district_id") {
+                clone.current_district_id = value;
+                clone.metadata.district =
+                    districts.find((d) => d.id === value)?.name || "Unknown District";
+                return clone;
             }
 
             const parts = path.split(".");
+            let ref = clone;
+
             parts.forEach((p, i) => {
                 if (i === parts.length - 1) ref[p] = value;
                 else ref = ref[p];
@@ -109,16 +133,16 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
             await api.createPersonnel(form);
             toast.success("Created Successfully");
             onNavigate("workforce");
-            // alert("Saved successfully!");
-
         } catch (err) {
-            toast.error("Failed to create new personnel, ensure that all fields are filled");
+            toast.error("Failed to create new personnel. Ensure all fields are filled.");
         }
 
         setSaving(false);
     }
 
-    // Qualifications
+    /* ---------------------------------------------------
+       QUALIFICATIONS INPUT
+    --------------------------------------------------- */
     function QualificationsInput() {
         const [input, setInput] = useState("");
 
@@ -128,7 +152,7 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
             setInput("");
         };
 
-        const remove = (item) => {
+        const remove = (item: string) => {
             update(
                 "qualifications",
                 form.qualifications.filter((q) => q !== item)
@@ -139,26 +163,20 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
             <div className="space-y-2">
                 <Label>Qualifications</Label>
 
-                {/* Input + Add button */}
                 <div className="flex gap-2">
                     <Input
                         placeholder="Type a qualification"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        className=""
                     />
-                    <Button type="button" onClick={add} className="">
+                    <Button type="button" onClick={add}>
                         Add
                     </Button>
                 </div>
 
-                {/* Tags */}
                 <div className="flex flex-wrap gap-2 mt-1">
                     {form.qualifications.map((q) => (
-                        <Badge
-                            key={q}
-                            className="px-3 py-1 flex items-center gap-1 rounded-xl"
-                        >
+                        <Badge key={q} className="px-3 py-1 flex items-center gap-1">
                             {q}
                             <X
                                 className="h-3 w-3 cursor-pointer"
@@ -171,21 +189,22 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
         );
     }
 
-
     /* ---------------------------------------------------
-       COMPETENCIES INPUT (TEXT TAGS)
+       COMPETENCIES INPUT
     --------------------------------------------------- */
     function CompetencyInput() {
         const [input, setInput] = useState("");
 
         const add = () => {
             if (!input.trim()) return;
-            const list = [...form.metadata.competencies, input.trim()];
-            update("metadata.competencies", list);
+            update("metadata.competencies", [
+                ...form.metadata.competencies,
+                input.trim(),
+            ]);
             setInput("");
         };
 
-        const remove = (item) => {
+        const remove = (item: string) => {
             update(
                 "metadata.competencies",
                 form.metadata.competencies.filter((c) => c !== item)
@@ -207,7 +226,7 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
                     </Button>
                 </div>
 
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex flex-wrap gap-2">
                     {form.metadata.competencies.map((c) => (
                         <Badge key={c} className="px-3 py-1 flex items-center gap-1">
                             {c}
@@ -222,10 +241,6 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
         );
     }
 
-
-    /* ---------------------------------------------------
-       WORKER STATUS — LOCKED TO "Available"
-    --------------------------------------------------- */
     function WorkerStatusDisplay() {
         return (
             <div className="space-y-2">
@@ -236,12 +251,11 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
     }
 
     /* ---------------------------------------------------
-       STEP DEFINITIONS
+       STEP UI
     --------------------------------------------------- */
+
     const steps = [
-        /* ---------------------------------------------------
-           STEP 1 — PERSONAL DETAILS
-        --------------------------------------------------- */
+        /* STEP 1 – Personal */
         (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -292,20 +306,20 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
                         onChange={(e) => update("date_of_birth", e.target.value)}
                     />
                 </div>
-                {/*District*/}
-                <div className="md:max-w-full w-30">
+
+                <div>
                     <Label>District</Label>
                     <Select
                         value={form.current_district_id}
-                        onValueChange={(id) => update("current_district_id", id)}
+                        onValueChange={(v) => update("current_district_id", v)}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Select District" />
                         </SelectTrigger>
                         <SelectContent>
-                            {districts.map((dist) => (
-                                <SelectItem key={dist?.name} value={dist?.id}>
-                                    {dist?.name}
+                            {districts.map((d) => (
+                                <SelectItem key={d.id} value={d.id}>
+                                    {d.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -314,12 +328,9 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
             </div>
         ),
 
-        /* ---------------------------------------------------
-           STEP 2 — CONTACT + EMPLOYMENT
-        --------------------------------------------------- */
+        /* STEP 2 – Employment */
         (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                 <div>
                     <Label>Phone</Label>
                     <Input
@@ -336,10 +347,9 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
                     />
                 </div>
 
-                {/* Employment Locked */}
                 <div>
                     <Label>Employment Status</Label>
-                    <Input placeholder= "Employed" value={form.employment_status} disabled={true} />
+                    <Input value="Employed" disabled />
                 </div>
 
                 <div>
@@ -362,78 +372,35 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
             </div>
         ),
 
-        /* ---------------------------------------------------
-           STEP 3 — METADATA
-        --------------------------------------------------- */
+        /* STEP 3 – Metadata */
         (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <WorkerStatusDisplay />
-                {/* Qualifications */}
                 <QualificationsInput />
-                {/*<div><Label>Qualifications</Label>*/}
-
-                {/*    <div className="flex flex-wrap gap-2 mt-2 mb-2">*/}
-                {/*        {form.qualifications.map((v) => (*/}
-                {/*            <Badge*/}
-                {/*                key={v}*/}
-                {/*                variant="secondary"*/}
-                {/*                className="cursor-pointer"*/}
-                {/*                onClick={() =>*/}
-                {/*                    update(*/}
-                {/*                        "qualifications",*/}
-                {/*                        form.qualifications.filter((x) => x !== v)*/}
-                {/*                    )*/}
-                {/*                }*/}
-                {/*            >*/}
-                {/*                {v} ×*/}
-                {/*            </Badge>*/}
-                {/*        ))}*/}
-                {/*    </div>*/}
-
-                {/*    <Select*/}
-                {/*        onValueChange={(v) =>*/}
-                {/*            update("qualifications", [...form.qualifications, v])*/}
-                {/*        }*/}
-                {/*    >*/}
-                {/*        <SelectTrigger>*/}
-                {/*            <SelectValue placeholder="Add qualification" />*/}
-                {/*        </SelectTrigger>*/}
-                {/*        <SelectContent>*/}
-                {/*            {qualificationOptions.map((opt) => (*/}
-                {/*                <SelectItem key={opt} value={opt}>*/}
-                {/*                    {opt}*/}
-                {/*                </SelectItem>*/}
-                {/*            ))}*/}
-                {/*        </SelectContent>*/}
-                {/*    </Select>*/}
-                {/*</div>*/}
                 <CompetencyInput />
-                 {/*Role*/}
-                <div className="md:max-w-full w-full space-y-2">
+
+                <div className="w-full space-y-2">
                     <Label>Cadre</Label>
                     <Select
                         value={form.cadre_id}
-                        onValueChange={(id) => update("cadre_id", id)}
+                        onValueChange={(v) => update("cadre_id", v)}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Select Cadre" />
                         </SelectTrigger>
                         <SelectContent>
-                            {cadres.map((cadre) => (
-                                <SelectItem key={cadre?.id} value={cadre?.id}>
-                                    {cadre?.name}
+                            {cadres.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                    {c.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
-
             </div>
         ),
 
-        /* ---------------------------------------------------
-           STEP 4 — REVIEW
-        --------------------------------------------------- */
+        /* STEP 4 – Review */
         (
             <div className="text-center py-10">
                 <p className="text-lg font-medium">Review & Submit</p>
@@ -448,9 +415,7 @@ export default function AddWorkerWizard({onNavigate}: AddWorkerProps) {
        RENDER
     --------------------------------------------------- */
     return (
-        <div className="w-full max-w-3xl mx-auto p-6 ">
-            <h2 className="text-2xl font-semibold mb-6"></h2>
-
+        <div className="w-full max-w-3xl mx-auto p-6">
             <div className="mb-8">{steps[step]}</div>
 
             <div className="flex justify-between mt-6">

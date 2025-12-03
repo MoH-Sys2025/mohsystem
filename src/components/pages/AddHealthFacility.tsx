@@ -63,7 +63,7 @@ export default function AddHealthyFacility({onNavigate}: AddWorkerProps) {
     /* ---------------------------------------------------
        UPDATE HELPER
     --------------------------------------------------- */
-    function update(path, value) {
+    function update(path: string, value: string | string[]) {
         setForm((prev) => {
             const clone = structuredClone(prev);
             let ref = clone;

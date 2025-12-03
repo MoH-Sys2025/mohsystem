@@ -7,7 +7,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   if (!isLoggedIn) {
-    //return <LoginPage onLogin={() => setIsLoggedIn(true)} />;
+    return <LoginPage onLogin={() => setIsLoggedIn(true)} />;
   }
 
   return (
