@@ -8,7 +8,7 @@ import {
     Briefcase,
     Calendar,
     LucideMailbox,
-    Edit3, BriefcaseMedical, LinkIcon
+    Edit3, BriefcaseMedical, LinkIcon, Unlink
 } from "lucide-react";
 import DeploymentSummary from "@/components/DeploymentSummary.tsx";
 import {PerfomanceBarChart, CompetencyRadarChart} from "@/components/UserCharts.tsx";
@@ -35,13 +35,12 @@ export default function HealthWorkerProfile() {
 
         // Update worker first
         setWorker(data);
-        const dBirth = getAge(data.date_of_birth);
         setLinks([
             ["DHIS2", data.dhis2_sync],
             ["IHRMIS", data.ihrmis_sync]
         ]);
 
-        setAge(dBirth);
+        setAge(data.metadata.age);
 
         const load = async () => {
 
@@ -104,18 +103,24 @@ export default function HealthWorkerProfile() {
                                 className="w-32 h-32 rounded-full shadow mb-4"
                             />
                             <h2 className="text-lg font-semibold flex-row flex items-center gap-2">{worker?.first_name} {worker?.last_name} </h2>
-                            <p className="text-neutral-500 mb-4">{cadle}</p>
-
+                            <p className="text-neutral-500">{cadle}</p>
+                            <p className="text-sm mb-4">{worker?.role}</p>
                             <div className="space-y-3 text-sm w-full text-left">
                                 <div className="flex items-center gap-2"><User size={16}/> {capitalize(worker?.gender)}, Age {age}</div>
                                 <div className="flex items-center gap-2"><Phone size={16}/> {worker?.phone}</div>
-                                <div className="flex justify-start gap-2 flex-column">
-                                    {linkedSystems.map((linkData, index)=>(
-                                        !linkData[1] && (
-                                            <div key={`link-${index}`} className="flex gap-2 text-gray-800 text-xs h-5">
-                                                <LinkIcon size={16} />{linkData[0]}
-                                            </div>
-                                        )
+                                <div className="flex justify-start gap-4 flex-column">
+                                    {linkedSystems.map((linkData, index) => (
+                                        <div
+                                            key={`link-${index}`}
+                                            className="flex gap-1 text-gray-800 justify-center items-center text-xs h-5"
+                                        >
+                                            {linkData[1] ? (
+                                                <LinkIcon size={12} />
+                                            ) : (
+                                                <Unlink size={12} />
+                                            )}
+                                            {linkData[0]}
+                                        </div>
                                     ))}
                                 </div>
                                 <div className="flex items-center gap-2"><BriefcaseMedical size={16} />
@@ -134,18 +139,19 @@ export default function HealthWorkerProfile() {
                                 <h3 className="font-semibold mb-2">Qualifications</h3>
 
                                 <ul className="text-sm flex flex-col text-neutral-700">
-                                    {(!worker?.qualifications ||
-                                        worker?.qualifications.length === 0) ? (
-                                        <li className="text-neutral-500">No qualifications available</li>
-                                    ) : (
-                                        worker?.qualifications.map((item, index) => (
-                                            <li key={`qual-${index}`} className="py-1">
-                                                <div className="  bg-gray-200 px-3 py-1 rounded-full">
-                                                    {item}
-                                                </div>
-                                            </li>
-                                        ))
-                                    )}
+                                    {worker?.qualifications ? worker?.qualifications: "No qualifications are available"}
+                                    {/*{(!worker?.qualifications ||*/}
+                                    {/*    worker?.qualifications.length === 0) ? (*/}
+                                    {/*    <li className="text-gray-400">No qualifications available</li>*/}
+                                    {/*) : (*/}
+                                    {/*    worker?.qualifications.map((item, index) => (*/}
+                                    {/*        <li key={`qual-${index}`} className="py-1">*/}
+                                    {/*            <div className="  bg-gray-200 px-3 py-1 rounded-full">*/}
+                                    {/*                {item}*/}
+                                    {/*            </div>*/}
+                                    {/*        </li>*/}
+                                    {/*    ))*/}
+                                    {/*)}*/}
                                 </ul>
                             </div>
 
@@ -153,10 +159,10 @@ export default function HealthWorkerProfile() {
                             <div className="mt-6 w-full text-left">
                                 <h3 className="font-semibold mb-2">Competencies</h3>
                                 <ul className="list-none list-disc ml-0 text-sm flex flex-col justify-start text-neutral-700">
-                                    {worker?.metadata?.competencies === "" ? (
-                                        <div className="text-gray-400">User has no competencies available</div>
+                                    {!worker?.metadata?.competencies || worker?.metadata?.competencies.length === 0 ? (
+                                        <div className="text-gray-400">No competencies are available</div>
                                     ) : (
-                                        worker?.metadata?.competencies?.map((comp, index) => (
+                                        worker.metadata.competencies.map((comp, index) => (
                                             <li key={`comp-${index}`} className="py-1 w-full">
                                                 <div className="bg-gray-200 px-3 py-1 rounded-full">
                                                     {comp}
@@ -164,6 +170,7 @@ export default function HealthWorkerProfile() {
                                             </li>
                                         ))
                                     )}
+
                                 </ul>
 
                             </div>
