@@ -58,7 +58,7 @@ export default function DeploymentSummary({ imgSrc }: DeployProps): JSX.Element 
                                     <div className="flex flex-row gap-2 items-center">
                                         <Building2 className="w-3 h-3 text-blue-600" />
                                         {d.site}</div>
-                                    <Badge className={d.status === "Active"
+                                    <Badge  className={d.status === "Active"
                                                 ? "bg-emerald-300 hover:bg-emerald-300 text-gray-800"
                                                 : "bg-gray-200 hover:bg-gray-100 text-gray-800"
                                         }
@@ -74,10 +74,9 @@ export default function DeploymentSummary({ imgSrc }: DeployProps): JSX.Element 
                                     {d.role}
                                 </div>
                                 <div className="flex items-center flex-row text-xs text-neutral-700">
-                                    <Badge className="bg-gray-200 text-gray-800 rounded-sm">{d.start}
-                                    </Badge>
-                                    <div className=" text-gray-400">-------</div>
-                                    <span className="bg-gray-200 w-auto border-green-400 text-center text-gray-800 text-xs p-[2px] px-[4px] rounded-sm">{d.end}</span>
+                                    <Badge className="bg-gray-200 text-[10px] text-gray-800 rounded-full">{d.start}</Badge>
+                                    <div className=" text-gray-400">---</div>
+                                    <Badge className="bg-gray-200 text-[10px] text-gray-800 rounded-full">{d.end}</Badge>
                                 </div>
                             </div>
 

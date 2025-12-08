@@ -13,8 +13,9 @@ import HealthWorkerProfile from "@/components/pages/Profile.tsx";
 import CreateTrainingWizard from "@/components/pages/CreateTrainingForm.tsx";
 import NewDeploymentForm from "@/components/pages/DeploymentForm.tsx";
 import Notifications from "@/components/pages/Notifications.tsx";
-import AddWorkerWizard from "@/components/pages/AddHCW.tsx";
+import {AddWorker} from "@/components/pages/AddHCW.tsx";
 import AddHealthyFacility from "@/components/pages/AddHealthFacility.tsx";
+import OutbreakForm from "@/components/pages/OutbreakForm.tsx";
 interface DashboardProps {
   onLogout: () => void;
 }
@@ -37,13 +38,15 @@ export function Dashboard({ onLogout }: DashboardProps) {
         case 'add facility':
             return <AddHealthyFacility onNavigate={setCurrentPage} />;
         case 'add worker':
-            return <AddWorkerWizard onNavigate={setCurrentPage} />;
+            return <AddWorker onNavigate={setCurrentPage} />;
         case 'notifications':
             return <Notifications />;
       case 'deployments':
         return <Deployments onNavigate={setCurrentPage} />;
       case 'trainings':
         return <Trainings onNavigate={setCurrentPage} />;
+        case 'create outbreak':
+            return <OutbreakForm onSuccess={undefined} />;
       case 'competency':
         return <CompetencyTracking />;
       case 'settings':

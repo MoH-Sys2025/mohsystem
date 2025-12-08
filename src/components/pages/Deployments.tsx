@@ -1,11 +1,17 @@
 import { Send, MapPin, Users, Calendar, MoreVertical } from 'lucide-react';
-import {JSX} from "react";
+import React, {JSX, useEffect} from "react";
+import {api} from "@/supabase/Functions.tsx";
 
 interface DeployProps {
     onNavigate: (page: string) => void;
 }
 
 export function Deployments({onNavigate}: DeployProps): JSX.Element {
+    // const [deployments, setDeployments] = React.useState<DeployProps[]>([]);
+    //
+    // useEffect(async () => {
+    //     setDeployments(await api.getDeployments());
+    // }, [])
   const deployments = [
     {
       id: 'DEP-2024-045',

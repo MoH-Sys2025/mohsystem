@@ -3,6 +3,7 @@ import {Search, Filter, Download, MoreVertical, Loader2, Info, LoaderPinwheel} f
 import {Button} from "@/components/ui/button.tsx";
 import {districts} from "@/supabase/districts"
 import { api } from "@/supabase/Functions.tsx";
+import {useSelectedWorker} from "@/components/DataContext.tsx";
 
 
 interface WorkforceRegProps {
@@ -23,6 +24,7 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
     const [filterValue, setFilterValue] = useState<string | null>(null);
 
+    const { setSelectedWorker } = useSelectedWorker();
     // -----------------------------
     // FETCH DATA
     // -----------------------------
@@ -276,8 +278,8 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
                         </div>
 
                         {/* Table */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full table-auto">
+                        <div className="overflow-x-auto w-100 md:w-270 overflow-y-scroll flex flex-col">
+                            <table className="overflow-x-scroll">
                                 <thead className="bg-neutral-50 border-b border-neutral-200">
                                 <tr>
                                     {[
@@ -285,7 +287,7 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
                                         "Name",
                                         "Role",
                                         "District",
-                                        "Contact",
+                                        // "Contact",
                                         "Status",
                                         "Certifications",
                                         "Competencies",
@@ -304,7 +306,9 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
                                 <tbody className="divide-y divide-neutral-200 bg-white">
                                 {filteredWorkers.map((worker, index) => (
-                                    <tr onClick={()=>onNavigate("worker profile")} key={worker.id} className="hover:bg-neutral-50">
+                                    <tr onClick={()=>{
+                                        setSelectedWorker(worker); onNavigate("worker profile");
+                                    }} key={worker.id} className="hover:bg-neutral-50">
 
                                         <td className="px-3 py-1 text-xs whitespace-nowrap">
                                             {worker.personnel_identifier ?? worker.personnel_id ?? "—"}
@@ -329,9 +333,9 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
                                             {worker.metadata.district ?? "—"}
                                         </td>
 
-                                        <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                            {worker.phone ?? "—"}
-                                        </td>
+                                        {/*<td className="px-3 py-1 text-xs whitespace-nowrap">*/}
+                                        {/*    {worker.phone ?? "—"}*/}
+                                        {/*</td>*/}
 
                                         <td className="px-3 py-1 text-xs whitespace-nowrap">
                                     <span

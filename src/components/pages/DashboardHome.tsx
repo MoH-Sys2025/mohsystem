@@ -17,6 +17,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
         {page: "add worker", name: "Health Worker"},
         {page: "add facility", name: "Health Facility"},
         {page: "form trainings", name: "Trainings"},
+        {page: "create outbreak", name: "Add outbreak"},
     ]
   return (
     <div className="space-y-8 p-6 px-1 md:p-6">

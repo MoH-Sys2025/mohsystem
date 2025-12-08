@@ -91,6 +91,18 @@ export const api = {
         return data;
     },
 
+    async  listPersonnelMetaWorker(limit = 100) {
+        const { data, error } = await supabase
+            .from("personnel")
+            .select("*")
+            .filter("metadata->worker_status->>1", "eq", "Available")
+            .order("personnel_identifier", { ascending: true })
+            .limit(limit);
+
+        if (error) throw error;
+        return data;
+    },
+
     async listDistricts(limit = 100) {
         const { data, error } = await supabase
             .from("administrative_regions")
@@ -122,6 +134,29 @@ export const api = {
         if (error) throw error;
         return data;
     },
+
+    async listDeployments(limit = 200) {
+        const { data, error } = await supabase
+            .from("deployments")
+            .select("*")
+            .order("id", { ascending: true })
+            .limit(limit);
+
+        if (error) throw error;
+        return data;
+    },
+
+    async listOutbreaks(limit = 200) {
+        const { data, error } = await supabase
+            .from("outbreaks")
+            .select("*")
+            .order("id", { ascending: true })
+            .limit(limit);
+
+        if (error) throw error;
+        return data;
+    },
+
     async listCadresEq(cadreId?: string) {
         let query = supabase
             .from("cadres")
@@ -130,6 +165,21 @@ export const api = {
 
         if (cadreId) {
             query = query.eq("id", cadreId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return data;
+    },
+    async getCadresIdByName(cadreName?: string) {
+        let query = supabase
+            .from("cadres")
+            .select("*")
+            .order("created_at", { ascending: true });
+
+        if (cadreId) {
+            query = query.eq("id", cadreName);
         }
 
         const { data, error } = await query;
