@@ -1,0 +1,26 @@
+DASHBOARD
+..........................
+Link top tabs to supabase
+Recent activity
+Workforce deployment trends
+Active alerts
+
+WORKFORCE REGISTRY
+...........................
+Table Management (Delete user(s), Sorting, Selection, View profile, Exporting data to pdf, Excel, JSON)
+Add health worker by form
+Edit existing excel file upload facilities(Check similar users, Sorting, Copy&Paste from excel table functionality, error handling)
+
+DOCUMENTS
+..................
+Top tabs link to supabase backet
+
+TRAININGS
+...................
+
+COMPETENCY TRACKING
+.....................
+
+
+DEPLOYMENT
+......................

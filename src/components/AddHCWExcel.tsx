@@ -311,7 +311,7 @@ export default function ExcelUploader() {
 
                             {/* Download Template */}
                             <Button asChild variant="secondary" size="sm">
-                                <a href="/personnel_format.xlsx" download className="flex items-center gap-2">
+                                <a href="/personnel_template.xlsx" download className="flex items-center gap-2">
                                     <Download className="w-4 h-4" />
                                     Download Template
                                 </a>
