@@ -35,6 +35,7 @@ let _cachedPersonnel: any[] | null = null;
 let _cachedDistricts: any[] | null = null;
 let _cachedFacilities: any[] | null = null;
 let _cachedOutbreaks: any[] | null = null;
+let _cachedIndex: number | null = null;
 
 async function loadCachedPersonnel() {
     if (_cachedPersonnel) return _cachedPersonnel;
@@ -48,6 +49,30 @@ async function loadCachedOutbreaks() {
     const d = await api.listOutbreaks(2000).catch(() => []);
     _cachedOutbreaks = d || [];
     return _cachedOutbreaks;
+}
+
+async function loadCachedDeployId() {
+    const { data, error } = await supabase
+        .from("deployments_id_counters")
+        .select("last_number")
+        .single();   // because there's only one row
+
+    if (error) {
+        toast.error("Failed loading deployments indexes")
+    }
+    return (["DEP-" + (new Date().getFullYear()) + "-" + formatNumber(data?.last_number), data?.last_number])
+}
+
+function formatNumber(num: number) {
+    return String(num).padStart(3, "0");
+}
+
+async function insertDeploymentIndex(curIndex: number) {
+    await supabase
+        .from("deployments_id_counters")
+        .update({ last_number: curIndex })
+        .eq("id", "5d7f9048-692b-400a-8689-74f938cb9ee4");
+
 }
 
 async function loadCachedDistricts() {
@@ -102,12 +127,14 @@ export default function NewDeploymentForm({ onSuccess }: { onSuccess?: (data?: a
 const leftFormSchema = z.object({
     start_date: z.string().min(1, "Start date is required"),
     end_date: z.string().optional().nullable(),
-    assigned_district_id: z.string().nullable().optional(),
+    assigned_district_id: z.string(),
     assigned_facility_id: z.string().nullable().optional(),
-    outbreak_id: z.string().nullable().optional(),
+    outbreak_id: z.string(),
+    deploy_status: z.string(),
+    deployment_id: z.string().nullable().optional(),
     team_lead: z.string().nullable().optional(),
     role_description: z.string().optional().nullable(),
-    status: z.enum(["Pending", "Active", "Completed"]).default("Pending"),
+    status: z.enum(["Pending", "Deployed", "Available"]).default("Pending"),
     notes: z.string().optional().nullable(),
 });
 
@@ -115,7 +142,7 @@ type LeftFormValues = z.infer<typeof leftFormSchema>;
 
 function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
     const { selectedIds, setSelectedIds } = useContext(DeploymentContext);
-
+    const [deploy_id, setDeployId] = useState<any[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [districts, setDistricts] = useState<any[]>([]);
     const [facilities, setFacilities] = useState<any[]>([]);
@@ -124,16 +151,19 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
 
     useEffect(() => {
         const load = async () => {
-            const [p, d, f, o] = await Promise.all([
+            const [p, d, f, o, i] = await Promise.all([
                 loadCachedPersonnel(),
                 loadCachedDistricts(),
                 loadCachedFacilities(),
                 loadCachedOutbreaks(),
+                loadCachedDeployId(),
             ]);
             setPersonnelList([...p]);
             setDistricts([...d]);
             setFacilities([...f]);
             setOutbreaks([...o]);
+            setDeployId([...i])
+            console.log(i)
         };
         load();
     }, []);
@@ -142,6 +172,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
         resolver: zodResolver(leftFormSchema),
         defaultValues: {
             start_date: "",
+            deployment_id: null,
             end_date: null,
             assigned_district_id: null,
             assigned_facility_id: null,
@@ -166,6 +197,8 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             personnel_id,
             start_date: values.start_date || null,
             end_date: values.end_date || null,
+            deployment_id: deploy_id[0] || null,
+            deploy_status: values.deploy_status || null,
             assigned_district_id: values.assigned_district_id || null,
             assigned_facility_id: values.assigned_facility_id || null,
             team_lead: values.team_lead || null,
@@ -184,7 +217,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             setLoading(false);
             return;
         }
-
+        insertDeploymentIndex(deploy_id[1]+1)
         /* ---------------------------------------------------------
            UPDATE PERSONNEL worker_status[1] = "Pending"
            --------------------------------------------------------- */
@@ -221,7 +254,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                             name="start_date"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Start date</FormLabel>
+                                    <FormLabel>Start date *</FormLabel>
                                     <FormControl>
                                         <Input
                                             required
@@ -264,7 +297,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                         name="assigned_district_id"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Assigned district</FormLabel>
+                                <FormLabel>Assigned district *</FormLabel>
                                 <FormControl>
                                     <Select
                                         value={field.value ?? "none"}
@@ -288,26 +321,58 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                         )}
                     />
 
-                    {/* Outbreak response */}
+                    {/* Response Status */}
                     <FormField
                         control={form.control}
                         name="outbreak_id"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Outbreak response</FormLabel>
+                                <FormLabel>Outbreak response *</FormLabel>
                                 <FormControl>
                                     <Select
                                         value={field.value ?? "none"}
                                         onValueChange={(v) => field.onChange(v === "none" ? null : v)}
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select outbreak" />
+                                            <SelectValue className="w-full" placeholder="Select outbreak" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="w-full">
                                             <SelectItem value="none">None</SelectItem>
                                             {outbreaks.map((o) => (
                                                 <SelectItem key={o.id} value={o.id}>
                                                     {o.disease ?? o.outbreak_name ?? "—"}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    {/* Outbreak response */}
+                    <FormField
+                        control={form.control}
+                        name="deploy_status"
+                        render={({ field }) => (
+                            <FormItem className="w-full">
+                                <FormLabel>Response status *</FormLabel>
+                                <FormControl>
+                                    <Select
+                                        value={field.value ?? "none"}
+                                        onValueChange={(v) => field.onChange(v === "none" ? null : v)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue className="w-full" placeholder="Response Status" />
+                                        </SelectTrigger>
+                                        <SelectContent className="col-span-2 lg:col-span-1">
+                                            <SelectItem value="none">None</SelectItem>
+                                            {[{id: "Active", value: "active"}, {id:"Completed", value: "completed"}, {
+                                                id: "Closed",
+                                                value: "closed"
+                                            }].map((o) => (
+                                                <SelectItem key={o.id} value={o.value}>
+                                                    {o.id ? o.id : "—"}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -354,7 +419,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                         name="team_lead"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Team lead (optional)</FormLabel>
+                                <FormLabel>Team lead</FormLabel>
                                 <FormControl>
                                     <Select
                                         value={field.value ?? "__none"}

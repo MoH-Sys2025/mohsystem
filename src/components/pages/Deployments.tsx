@@ -1,60 +1,73 @@
 import { Send, MapPin, Users, Calendar, MoreVertical } from 'lucide-react';
-import React, {JSX, useEffect} from "react";
+import React, {JSX, useEffect, useState} from "react";
 import {api} from "@/supabase/Functions.tsx";
+import {Button} from "@/components/ui/button.tsx";
 
 interface DeployProps {
     onNavigate: (page: string) => void;
 }
 
 export function Deployments({onNavigate}: DeployProps): JSX.Element {
-    // const [deployments, setDeployments] = React.useState<DeployProps[]>([]);
-    //
-    // useEffect(async () => {
-    //     setDeployments(await api.getDeployments());
-    // }, [])
-  const deployments = [
-    {
-      id: 'DEP-2024-045',
-      outbreak: 'Cholera Outbreak',
-      district: 'Nsanje',
-      workers: 15,
-      startDate: '2024-11-20',
-      endDate: '2024-12-20',
-      status: 'Active',
-      priority: 'high',
-    },
-    {
-      id: 'DEP-2024-044',
-      outbreak: 'Malaria Response',
-      district: 'Karonga',
-      workers: 22,
-      startDate: '2024-11-15',
-      endDate: '2024-12-15',
-      status: 'Active',
-      priority: 'medium',
-    },
-    {
-      id: 'DEP-2024-043',
-      outbreak: 'COVID-19 Vaccination',
-      district: 'Lilongwe',
-      workers: 45,
-      startDate: '2024-11-10',
-      endDate: '2024-11-30',
-      status: 'Active',
-      priority: 'low',
-    },
-    {
-      id: 'DEP-2024-042',
-      outbreak: 'Measles Outbreak',
-      district: 'Blantyre',
-      workers: 18,
-      startDate: '2024-11-05',
-      endDate: '2024-11-25',
-      status: 'Completed',
-      priority: 'medium',
-    },
-  ];
+    const [activeD, setActiveD] = useState<number>();
+    const [deployedList, setDeployedList] = useState<DeploymentType[]>([]);
+    const [uniqueDeployed, setUniqueDeployedList] = useState<DeploymentType[]>([]);
+    const [deployed, setDeployed] = useState<number>();
+    const [activeDist, setActiveDist] = useState<number>();
+    const [activeOutb, setActiveOutbreaks] = useState<number>();
+    const [activeCounts, setActiveCounts] = useState<[]>();
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // run all API calls in parallel
+                const [
+                    activeDeployments,
+                    deploymentsList,
+                    deployedDistricts,
+                    activeOutbreaks,
+                    deploymentCounts,
+                    uniqueDeployed
+                ] = await Promise.all([
+                    api.getActiveDeployments(),
+                    api.getUniqueDeployments(),
+                    api.listDeployments(10000000),
+                    api.getDeployedDistricts(),
+                    api.getActiveOutBreaks(),
+                    api.getDeploymentCounts()
+                ]);
+
+                setActiveD(activeDeployments);
+                setDeployedList(deploymentsList || []);
+                setUniqueDeployedList(uniqueDeployed || []);
+                setDeployed(deploymentsList?.length || 0);
+                setActiveDist(deployedDistricts);
+                setActiveOutbreaks(activeOutbreaks);
+                setActiveCounts(deploymentCounts);
+            } catch (err) {
+                console.error("Failed to load data:", err);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+
+    const topTabData = [
+        {
+            item: "Active Deployments",
+            value: activeD
+        },{
+            item: "Workers Deployed",
+            value: deployed
+        },{
+            item: "Active Districts Covered",
+            value: activeDist
+        },{
+            item: "Active Outbreaks",
+            value: activeOutb
+        },
+
+    ]
   return (
     <div className="space-y-8 p-6">
       {/* Header */}
@@ -63,30 +76,20 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
           <h1 className="text-neutral-900 mb-2">Deployments</h1>
           <p className="text-neutral-500">Manage healthcare worker deployments and outbreak responses</p>
         </div>
-        <button onClick={()=>onNavigate("deploy form")} className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 flex items-center gap-2 transition-colors shadow-sm">
+        <Button onClick={()=>onNavigate("deploy form")} className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg flex items-center gap-2 text-black hover:bg-gray-200">
           <Send className="w-5 h-5" />
           New Deployment
-        </button>
+        </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Active Deployments</p>
-          <p className="text-3xl font-semibold text-neutral-900">156</p>
-        </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Workers Deployed</p>
-          <p className="text-3xl font-semibold text-neutral-900">847</p>
-        </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Districts Covered</p>
-          <p className="text-3xl font-semibold text-neutral-900">18</p>
-        </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Avg. Duration</p>
-          <p className="text-3xl font-semibold text-neutral-900">28 days</p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {topTabData.map((d, i) => (
+              <div className="bg-white rounded-xl border border-neutral-200 p-1 px-4 flex flex-row items-center gap-5 ">
+                  <p className="text-sm text-neutral-500">{d.item}</p>
+                  <p className="text-2xl font-semibold text-neutral-900">{d.value}</p>
+              </div>
+          ))}
       </div>
 
       {/* Priority Deployments */}
@@ -163,46 +166,36 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200 bg-white">
-              {deployments.map((deployment) => (
-                <tr key={deployment.id} className="hover:bg-neutral-50 transition-colors">
+              {(uniqueDeployed || []).map((deploy, index) => (
+                <tr key={deploy.deployment_id} className="hover:bg-neutral-50 transition-colors">
                   <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-900">{deployment.id}</span>
+                    <span className="text-sm text-neutral-900">{deploy.deployment_id}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-neutral-900">{deployment.outbreak}</p>
-                    <p className="text-xs text-neutral-500">
-                      {deployment.priority === 'high' && (
-                        <span className="text-red-600">High Priority</span>
-                      )}
-                      {deployment.priority === 'medium' && (
-                        <span className="text-amber-600">Medium Priority</span>
-                      )}
-                      {deployment.priority === 'low' && (
-                        <span className="text-blue-600">Low Priority</span>
-                      )}
-                    </p>
+                    <p className="text-sm font-medium text-neutral-900">{deploy.outbreak_id}</p>
+                    <p className="text-xs text-neutral-500">{deploy.deployed_status}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{deployment.district}</span>
+                    <span className="text-sm text-neutral-600">{deploy.district_id}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{deployment.workers}</span>
+                    <span className="text-sm text-neutral-600">{activeCounts[index]}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{deployment.startDate}</span>
+                    <span className="text-sm text-neutral-600">{deploy.start_date}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{deployment.endDate}</span>
+                    <span className="text-sm text-neutral-600">{deploy.end_date ? deploy.end_date: "—"}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                        deployment.status === 'Active'
+                        deploy.status === 'Active'
                           ? 'bg-emerald-100 text-emerald-700'
                           : 'bg-neutral-100 text-neutral-700'
                       }`}
                     >
-                      {deployment.status}
+                      {deploy.status}
                     </span>
                   </td>
                   <td className="px-6 py-4">

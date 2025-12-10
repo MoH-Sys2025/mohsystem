@@ -1,4 +1,5 @@
 import { FileText, Upload, Download, Eye, MoreVertical } from 'lucide-react';
+import {Button} from "@/components/ui/button.tsx";
 
 export function Documents() {
   const documents = [
@@ -52,10 +53,10 @@ export function Documents() {
           <h1 className="text-neutral-900 mb-2">Documents</h1>
           <p className="text-neutral-500">Manage protocols, guidelines, and training materials</p>
         </div>
-        <button className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 flex items-center gap-2 transition-colors shadow-sm">
+        <Button className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg text-gray hover:bg-gray-200 flex items-center gap-2">
           <Upload className="w-5 h-5" />
           Upload Document
-        </button>
+        </Button>
       </div>
 
       {/* Stats */}

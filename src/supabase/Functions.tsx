@@ -1,4 +1,5 @@
 import {supabase} from "@/supabase/supabase.ts";
+import {toast} from "sonner";
 export function getAuthHeaders() {
     const session = localStorage.getItem('mors_session');
     if (!session) {
@@ -33,7 +34,7 @@ export const api = {
             .select("*")
             .single();
         console.log(payload)
-        if (error) throw error;
+        if (error) toast.error("The system failed to create the User")
         return data;
     },
 
@@ -45,10 +46,94 @@ export const api = {
             .select("*")
             .single();
 
-        if (error) throw error;
+        if (error) toast.error("There was an error while updating Health workers data");
         return data;
     },
+    async getUniqueDeployments() {
+        const { data, error } = await supabase
+            .from("deployments")
+            .select("*")  // get all columns
+            .order("deployment_id");
 
+        if (error) {
+            toast.error("Error fetching deployments data");
+            return [];
+        }
+
+        // Remove duplicates by deployment_id
+        const seen = new Set();
+        const uniqueDeployments = [];
+
+        data.forEach(row => {
+            if (!seen.has(row.deployment_id)) {
+                seen.add(row.deployment_id);
+                uniqueDeployments.push(row);
+            }
+        });
+        return uniqueDeployments;
+    }
+
+    ,
+    async getDeploymentCounts() {
+        // 1. get ONLY active rows
+        const { data, error } = await supabase
+            .from("deployments")
+            .select("deployment_id, deploy_status")
+            .order("deployment_id");
+
+        if (error) {
+            toast.error("Error fetching deployments data")
+            return [];
+        }
+
+        // 2. count equal deployment_id
+        const counts = {};
+
+        data.forEach(row => {
+            const id = row.deployment_id;
+            counts[id] = (counts[id] || 0) + 1;
+        });
+
+        // 3. return only the values (counts)
+        return Object.values(counts);
+    },
+
+    async getActiveDeployments() {
+        const { data, error } = await supabase
+            .from("deployments")
+            .select("deployment_id", { count: "exact" })
+            .eq("deploy_status", "active");
+
+        if (error) toast.error("There was an error while getting active deployments");
+
+        const unique = [...new Set(data.map((d) => d.deployment_id))].length;
+
+        return unique;
+    },
+    async getDeployedDistricts() {
+        const { data, error } = await supabase
+            .from("deployments")
+            .select("assigned_district_id", { count: "exact" })
+            .eq("deploy_status", "active");
+
+        if (error) toast.error("There was an error while getting active deployed districts");
+
+        const unique = [...new Set(data.map((d) => d.assigned_district_id))].length;
+
+        return unique;
+    },
+    async getActiveOutBreaks() {
+        const { data, error } = await supabase
+            .from("deployments")
+            .select("outbreak_id", { count: "exact" })
+            .eq("deploy_status", "active");
+
+        if (error) toast.error("There was an error while getting active outbreaks");
+
+        const unique = [...new Set(data.map((d) => d.outbreak_id))].length;
+
+        return unique;
+    },
     async getPersonnelById(id: any) {
         const { data, error } = await supabase
             .from("personnel")
@@ -56,7 +141,7 @@ export const api = {
             .eq("id", id)
             .single();
 
-        if (error) throw error;
+        if (error) toast.error("There was an error while getting Health workers data");
         return data;
     },
 
@@ -66,7 +151,7 @@ export const api = {
             .select("*")
             .order("id", { ascending: true })
             .limit(limit);
-        if (error) throw error;
+        if (error) toast.error("There was an rror while getting notifications");
         return data;
     },
 
@@ -76,7 +161,7 @@ export const api = {
             .delete()
             .eq("id", id);
 
-        if (error) throw error;
+        if (error) toast.error("Error deleting notification");
         return true;
     },
 
@@ -87,7 +172,7 @@ export const api = {
             .order("personnel_identifier", { ascending: true })
             .limit(limit);
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching data");
         return data;
     },
 
@@ -99,7 +184,7 @@ export const api = {
             .order("personnel_identifier", { ascending: true })
             .limit(limit);
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching health workers data");
         return data;
     },
 
@@ -110,7 +195,7 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching districts");
         return data;
     },
 
@@ -121,7 +206,7 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching cadres");
         return data;
     },
     async listFacilities(limit = 100) {
@@ -131,18 +216,17 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching Health facilities");
         return data;
     },
 
-    async listDeployments(limit = 200) {
+    async listDeployments(limit = 2000000) {
         const { data, error } = await supabase
             .from("deployments")
             .select("*")
             .order("id", { ascending: true })
             .limit(limit);
-
-        if (error) throw error;
+        if (error) toast.error("Error fetching deployments");
         return data;
     },
 
@@ -153,7 +237,7 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching outbreaks data");
         return data;
     },
 
@@ -169,7 +253,7 @@ export const api = {
 
         const { data, error } = await query;
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching cadres");
         return data;
     },
     async getCadresIdByName(cadreName?: string) {
@@ -184,7 +268,7 @@ export const api = {
 
         const { data, error } = await query;
 
-        if (error) throw error;
+        if (error) toast.error("Error fetching cadres");
         return data;
     }
 

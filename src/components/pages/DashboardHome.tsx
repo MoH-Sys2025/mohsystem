@@ -6,12 +6,29 @@ import { WorkforceChart } from '../WorkforceChart';
 import { AlertsPanel } from '../AlertsPanel';
 import {Button} from "@/components/ui/button.tsx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import {useEffect, useState} from "react";
+import {api} from "@/supabase/Functions.tsx";
 
 interface DashboardProps {
     onNavigate?: (page: string) => void;
 }
 
 export function DashboardHome({onNavigate}: DashboardProps) {
+    const [workforce, setWorkforce] = useState([])
+    const [deployments, setDeployments] = useState([])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const data = await api.listPersonnel(1000000);
+            setWorkforce(data);
+            const data2 = await api.listDeployments(1000000);
+            setDeployments(data2);
+
+        };
+
+        fetchData();
+    }, []);
+
     const createData = [
         {page: "deploy form", name: "Deployments"},
         {page: "add worker", name: "Health Worker"},
@@ -29,7 +46,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
         </div>
               <Popover>
                   <PopoverTrigger asChild>
-                      <Button variant="default">Create <MoreVertical /></Button>
+                      <Button className="text-sm cursor-pointer bg-gray-100 border-2 hover:bg-gray-200 px-3 border-dashed rounded-lg text-black">Create <MoreVertical /></Button>
                   </PopoverTrigger>
 
                   <PopoverContent className="w-40 mr-2">
@@ -45,14 +62,14 @@ export function DashboardHome({onNavigate}: DashboardProps) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Workforce"
-          value="2,847"
-          change="+12.5%"
-          trend="up"
-          icon={Users}
-          color="emerald"
-        />
+          <StatCard
+              title="Total Workforce"
+              value={workforce.length}
+              change="+12.5%"
+              trend="up"
+              icon={Users}
+              color="emerald"
+          />
         <StatCard
           title="Active Deployments"
           value="156"

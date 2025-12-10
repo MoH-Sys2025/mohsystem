@@ -28,7 +28,9 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [cadres, setCadres] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
+    const [available, setAvailable] = useState<number>(0);
+    const [unemployed, setUnimployed] = useState<number>(0);
+    const [deployed, setDeployed] = useState<number>(0);
 const [searchTerm, setSearchTerm] = useState("");
 const [filterOpen, setFilterOpen] = useState(false);
 const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -44,6 +46,21 @@ useEffect(() => {
 
             setPersonnel(Array.isArray(data) ? data : []);
             setCadres(Array.isArray(cadresData) ? cadresData : []);
+            const totalAvailable = data.filter(
+                item => item.metadata?.worker_status?.includes("Available")
+            ).length;
+
+            const totalDeployed = data.filter(
+                item => item.metadata?.worker_status?.includes("Deployed")
+            ).length;
+
+            const totalUnemployed = data.filter(
+                item => item.employment_status.includes("Unemployed")
+            ).length;
+
+            setAvailable(totalAvailable);
+            setDeployed(totalDeployed);
+            setUnimployed(totalUnemployed);
         } catch (err: any) {
             setError(err?.message ?? String(err));
         } finally {
@@ -100,7 +117,9 @@ const filteredWorkers = workers.filter((worker) => {
             )
         );
     }
-
+function percentage(perValue, value1, value2) {
+    return (perValue*100/(value1+value2));
+}
     return (
         searchMatch &&
         String(workerValue ?? "")
@@ -127,33 +146,41 @@ const formatInitials = (worker: any) => {
 
 return (
     <div className="space-y-8 p-6 px-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-start lg:items-center justify-between">
             <div>
                 <h1 className="text-neutral-900 mb-2">Workforce Registry</h1>
                 <p className="text-neutral-500">
                     Manage and monitor healthcare workers across Malawi
                 </p>
             </div>
-            <Button onClick={()=>onNavigate('add worker')}>Add Health Worker</Button>
+            <Button className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg" variant="secondary" size="lg" onClick={()=>onNavigate('add worker')}>+ Add Health Worker</Button>
         </div>
 
         {!loading && (
             <>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {["2,847", "156", "2,634", "57"].map((value, i) => (
-                        <div key={i} className="bg-white rounded-xl border border-neutral-200 p-5">
-                            <p className="text-sm text-neutral-500 mb-1">
-                                {["Total Workers", "Deployed", "Available", "On Leave"][i]}
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-2 md:hidden">
+                    {[workers.length, deployed, available, workers.length-deployed-available, workers.length-unemployed, unemployed].map((value, i) => (
+                        <div key={i} className="bg-white  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1  md:col-span-1">
+                            <p className="text-sm text-neutral-500 mb-1 flex flex-row items-center px-2 justify-between gap-4">
+                                {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
                             </p>
-                            <p className="text-3xl font-semibold text-neutral-900">{value}</p>
                         </div>
                     ))}
                 </div>
-
                 <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden relative">
-                    <div className="p-6 border-b border-neutral-200">
-                        <div className="flex gap-3">
-                            <div className="flex-1 relative">
+                    <div className="p-6 py-3 border-b border-neutral-200 space-y-2">
+                        <div className="grid-cols-2 md:grid-cols-6 gap-2 hidden md:grid">
+                            {[workers.length, deployed, available, workers.length-deployed-available, workers.length-unemployed, unemployed].map((value, i) => (
+                                <div key={i} className="bg-white  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1  md:col-span-1">
+                                    <p className="text-sm text-neutral-500 mb-1 flex flex-row items-center px-2 justify-between gap-4">
+                                        {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-12 gap-2 md:gap-1">
+                            <div className="relative md:col-span-9 col-span-12">
+
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                                 <input
                                     type="text"
@@ -166,13 +193,13 @@ return (
 
                             <button
                                 onClick={() => setFilterOpen(!filterOpen)}
-                                className="px-4 py-2 bg-white border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm"
+                                className="px-4 py-2 bg-white border border-neutral-200 col-span-7 md:col-span-1 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm"
                             >
                                 <Filter className="w-4 h-4" />
                                 Filters
                             </button>
 
-                            <button className="px-4 py-2 bg-white border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm">
+                            <button className="px-4 py-2 bg-white border border-neutral-200 col-span-3 md:col-span-1 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm">
                                 <Download className="w-4 h-4" />
                                 Export
                             </button>
@@ -181,8 +208,8 @@ return (
                                 const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
                                 setPersonnel(data);
                                 setLoading(false)
-                            }} variant="ghost" className="px-4 py-2 bg-white border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm">
-                                <LoaderPinwheel className="w-4 h-4" />
+                            }} variant="ghost" className=" w-10 ml-auto  bg-white border col-span-1 border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 text-xs">
+                                <Loader2 className="w-2 h-2" />
                             </Button>
                         </div>
 
