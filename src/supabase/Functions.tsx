@@ -330,7 +330,7 @@ export const api = {
             .from("deployments")
             .select("*")
             .eq("personnel_id", equal_data)
-            .order("deployment_id", { ascending: true })
+            .order("created_at", { ascending: true })
             .limit(limit);
         if (error) {
             toast.error("Error fetching deployments");

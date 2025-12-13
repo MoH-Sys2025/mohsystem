@@ -16,13 +16,25 @@ interface DashboardProps {
 export function DashboardHome({onNavigate}: DashboardProps) {
     const [workforce, setWorkforce] = useState([])
     const [deployments, setDeployments] = useState([])
+    const [activeDeploy, setDeploymentsCount] = useState<number>(0);
+    const [activeOutbreaks, setOutbreaksCount] = useState<number>(0);
+    const [resRate, setResRate] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
-            const data = await api.listPersonnel(1000000);
+            const [data, data2, activeDeploy, activeOutbreaks, resRates] = await Promise.all([
+                api.listPersonnel(10000),
+                api.listDeployments(10000),
+                api.getActiveDeployments(),
+                api.getActiveOutBreaks(),
+                api.getOutbreakInfo()
+            ])
             setWorkforce(data);
-            const data2 = await api.listDeployments(1000000);
+            setOutbreaksCount(activeOutbreaks)
+            setDeploymentsCount(activeDeploy)
             setDeployments(data2);
+            console.log(resRates)
+            setResRate(resRates.length)
 
         };
 
@@ -72,7 +84,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
           />
         <StatCard
           title="Active Deployments"
-          value="156"
+          value={activeDeploy}
           change="+8.3%"
           trend="up"
           icon={UserCheck}
@@ -80,7 +92,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
         />
         <StatCard
           title="Active Outbreaks"
-          value="3"
+          value={activeOutbreaks}
           change="-25%"
           trend="down"
           icon={AlertTriangle}
@@ -88,7 +100,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
         />
         <StatCard
           title="Response Rate"
-          value="94.2%"
+          value={resRate + " %"}
           change="+5.1%"
           trend="up"
           icon={TrendingUp}

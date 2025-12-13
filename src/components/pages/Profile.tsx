@@ -86,7 +86,6 @@ export default function HealthWorkerProfile() {
         </div>
     ]
     const imgSrc = (capitalize(worker?.gender) === 'Female') ? "portrait_Nurse.jpg":"male_nurse.png"
-
     return (
         <div className="w-full min-h-screen bg-white">
             <div className="max-w-full w-full grid grid-cols-1 md:grid-cols-12 gap-0 ">

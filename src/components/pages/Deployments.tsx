@@ -21,10 +21,6 @@ interface DeployProps {
 }
 
 export function Deployments({onNavigate}: DeployProps): JSX.Element {
-    function viewWorkers(ids){
-        // console.log(ids)
-    }
-
     const [activeD, setActiveD] = useState<number>(0);
     const [deployedList, setDeployedList] = useState<any[]>([]);
     const [uniqueDeployed, setUniqueDeployedList] = useState<any[]>([]);

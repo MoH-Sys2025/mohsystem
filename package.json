@@ -55,6 +55,7 @@
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.66.1",
     "react-resizable-panels": "^3.0.6",
+    "react-router-dom": "^7.10.1",
     "react-virtualized-auto-sizer": "^1.0.26",
     "react-virtuoso": "^4.15.0",
     "recharts": "^2.15.4",
