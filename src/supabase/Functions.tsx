@@ -33,7 +33,6 @@ export const api = {
             .insert(payload)
             .select("*")
             .single();
-        console.log(payload)
         if (error) toast.error("The system failed to create the User")
         return data;
     },
@@ -71,9 +70,107 @@ export const api = {
             }
         });
         return uniqueDeployments;
-    }
+    },
 
-    ,
+    async updateDeploymentStatus(deploymentId, status) {
+        try {
+            // ------------------------------------------------------------------
+            // 1. Get all personnel_ids linked to this deployment_id
+            // ------------------------------------------------------------------
+            const { data: deploymentRows, error: fetchError } = await supabase
+                .from("deployments")
+                .select("personnel_id")
+                .eq("deployment_id", deploymentId);
+
+            if (fetchError) throw fetchError;
+
+            const personnelIds = deploymentRows.map((row) => row.personnel_id);
+
+            // ------------------------------------------------------------------
+            // 2. Update all deployments rows (same deployment_id)
+            // ------------------------------------------------------------------
+            if (!deploymentId || !status) return;
+
+            let updatePayload = {};
+
+            if (status === "completed") {
+                updatePayload = { deploy_status: "completed", status: "Deployed" };
+            } else {
+                updatePayload = { status };
+            }
+
+            const { error } = await supabase
+                .from("deployments")
+                .update(updatePayload)
+                .eq("deployment_id", deploymentId);
+
+            if (error) {
+                toast.error("Failed to perform this action");
+                return
+            }
+            // ------------------------------------------------------------------
+            // 3. Update personnel table metadata.worker_status
+            // ------------------------------------------------------------------
+            if (personnelIds.length > 0) {
+                const { error } = await supabase.rpc(
+                    "update_worker_status_item2",
+                    {
+                        p_personnel_ids: personnelIds,
+                        p_status: (status === "completed") ? "Available":status, // "Deployed" | "Pending" | "Available"
+                    }
+                );
+
+                if (error) toast.error("Failed to update Deployments table")
+
+
+            }
+
+            return { success: true };
+        } catch (error) {
+            toast.error("Update error");
+            return { success: false, error };
+        }
+    },
+    async getOutbreakInfo() {
+        // 1. Fetch deployments
+        const { data: deploymentsData, error: deploymentsError } = await supabase
+            .from("deployments")
+            .select("*")
+            .order("deployment_id");
+
+        if (deploymentsError) {
+            toast.error("Error fetching deployments data");
+            return [];
+        }
+
+        // 2. Remove duplicates by deployment_id
+        const seen = new Set();
+        const uniqueDeployments = [];
+
+        deploymentsData.forEach(row => {
+            if (!seen.has(row.deployment_id)) {
+                seen.add(row.deployment_id);
+                uniqueDeployments.push(row);
+            }
+        });
+
+        // 3. Extract unique outbreak_ids
+        const outbreakIds = uniqueDeployments.map(d => d.outbreak_id);
+
+        // 4. Fetch outbreaks (rename variables here)
+        const { data: outbreaksData, error: outbreaksError } = await supabase
+            .from("outbreaks")
+            .select("id, disease, district")
+            .in("id", outbreakIds);
+
+        if (outbreaksError) {
+            toast.error("Error fetching outbreaks");
+            return [];
+        }
+
+        // 5. Return outbreaks data
+        return outbreaksData;
+    },
     async getDeploymentCounts() {
         // 1. get ONLY active rows
         const { data, error } = await supabase
@@ -129,7 +226,6 @@ export const api = {
             .eq("deploy_status", "active");
 
         if (error) toast.error("There was an error while getting active outbreaks");
-
         const unique = [...new Set(data.map((d) => d.outbreak_id))].length;
 
         return unique;
@@ -229,7 +325,19 @@ export const api = {
         if (error) toast.error("Error fetching deployments");
         return data;
     },
-
+    async listDeploymentsEq(equal_data: string, limit = 10000) {
+        const { data, error } = await supabase
+            .from("deployments")
+            .select("*")
+            .eq("personnel_id", equal_data)
+            .order("deployment_id", { ascending: true })
+            .limit(limit);
+        if (error) {
+            toast.error("Error fetching deployments");
+            return []
+        }
+        return data;
+    },
     async listOutbreaks(limit = 200) {
         const { data, error } = await supabase
             .from("outbreaks")

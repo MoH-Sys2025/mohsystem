@@ -140,7 +140,8 @@ const leftFormSchema = z.object({
 
 type LeftFormValues = z.infer<typeof leftFormSchema>;
 
-function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
+function
+LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
     const { selectedIds, setSelectedIds } = useContext(DeploymentContext);
     const [deploy_id, setDeployId] = useState<any[] | null>(null);
     const [loading, setLoading] = useState(false);

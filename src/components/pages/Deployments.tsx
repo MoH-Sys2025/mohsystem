@@ -1,48 +1,69 @@
-import { Send, MapPin, Users, Calendar, MoreVertical } from 'lucide-react';
+import {
+    Send,
+    MapPin,
+    Users,
+    Calendar,
+    MoreVertical,
+    User2,
+    UserCheck2,
+    Users2,
+    UserPlus2,
+    BookMarked, BookmarkCheck, LoaderIcon
+} from 'lucide-react';
 import React, {JSX, useEffect, useState} from "react";
 import {api} from "@/supabase/Functions.tsx";
 import {Button} from "@/components/ui/button.tsx";
+import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover.tsx";
+import {useSelectedWorker} from "@/components/DataContext.tsx";
 
 interface DeployProps {
     onNavigate: (page: string) => void;
 }
 
 export function Deployments({onNavigate}: DeployProps): JSX.Element {
-    const [activeD, setActiveD] = useState<number>();
-    const [deployedList, setDeployedList] = useState<DeploymentType[]>([]);
-    const [uniqueDeployed, setUniqueDeployedList] = useState<DeploymentType[]>([]);
-    const [deployed, setDeployed] = useState<number>();
-    const [activeDist, setActiveDist] = useState<number>();
-    const [activeOutb, setActiveOutbreaks] = useState<number>();
-    const [activeCounts, setActiveCounts] = useState<[]>();
+    function viewWorkers(ids){
+        // console.log(ids)
+    }
 
+    const [activeD, setActiveD] = useState<number>(0);
+    const [deployedList, setDeployedList] = useState<any[]>([]);
+    const [uniqueDeployed, setUniqueDeployedList] = useState<any[]>([]);
+    const [deployed, setDeployed] = useState<number>(0);
+    const [activeDist, setActiveDist] = useState<number>(0);
+    const [activeOutb, setActiveOutbreaks] = useState<number>(0);
+    const [activeCounts, setActiveCounts] = useState<number[]>([]);
+    const [outbreakInfo, setOutbreakInfo] = useState<any[]>([]);
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // run all API calls in parallel
                 const [
-                    activeDeployments,
-                    deploymentsList,
-                    deployedDistricts,
-                    activeOutbreaks,
-                    deploymentCounts,
-                    uniqueDeployed
+                    activeDeployments,       // number
+                    uniqueDeployments,       // array
+                    deploymentsList,         // array
+                    deployedDistricts,       // number
+                    deploymentCounts,        // array
+                    activeOutbreaks,          // number
+                    outbreakData
                 ] = await Promise.all([
                     api.getActiveDeployments(),
                     api.getUniqueDeployments(),
                     api.listDeployments(10000000),
                     api.getDeployedDistricts(),
+                    api.getDeploymentCounts(),
                     api.getActiveOutBreaks(),
-                    api.getDeploymentCounts()
+                    api.getOutbreakInfo()
                 ]);
 
                 setActiveD(activeDeployments);
+                setUniqueDeployedList(uniqueDeployments || []);
                 setDeployedList(deploymentsList || []);
-                setUniqueDeployedList(uniqueDeployed || []);
                 setDeployed(deploymentsList?.length || 0);
                 setActiveDist(deployedDistricts);
                 setActiveOutbreaks(activeOutbreaks);
                 setActiveCounts(deploymentCounts);
+                setOutbreakInfo(outbreakData);
+                console.log(deploymentCounts);
+
             } catch (err) {
                 console.error("Failed to load data:", err);
             }
@@ -50,6 +71,7 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
 
         fetchData();
     }, []);
+
 
 
     const topTabData = [
@@ -68,6 +90,12 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
         },
 
     ]
+
+    const outbreakLookup = Object.fromEntries(
+        outbreakInfo.map(o => [o.id, o])
+    );
+
+
   return (
     <div className="space-y-8 p-6">
       {/* Header */}
@@ -166,45 +194,67 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200 bg-white">
-              {(uniqueDeployed || []).map((deploy, index) => (
-                <tr key={deploy.deployment_id} className="hover:bg-neutral-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-900">{deploy.deployment_id}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-neutral-900">{deploy.outbreak_id}</p>
-                    <p className="text-xs text-neutral-500">{deploy.deployed_status}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{deploy.district_id}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{activeCounts[index]}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{deploy.start_date}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{deploy.end_date ? deploy.end_date: "—"}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                        deploy.status === 'Active'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-neutral-100 text-neutral-700'
-                      }`}
-                    >
-                      {deploy.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button className="p-1.5 hover:bg-neutral-100 rounded-md transition-colors">
-                      <MoreVertical className="w-4 h-4 text-neutral-600" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+            {(uniqueDeployed || []).map((deploy, index) => {
+                const outbreak = outbreakLookup[deploy.outbreak_id]; // get outbreak by outbreak_id
+
+                return (
+                    <tr key={deploy.deployment_id} className="hover:bg-neutral-50 transition-colors">
+                        <td className="px-6 py-4">
+                            <span className="text-sm text-neutral-900">{deploy.deployment_id}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                            <p className="text-sm font-medium text-neutral-900">{outbreak?.disease}</p>
+                            <p className="text-xs text-neutral-500">{deploy.deploy_status}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                            <span className="text-sm text-neutral-600">{outbreak?.district || "—"}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                            <span className="text-sm text-neutral-600">{activeCounts[index] || 0}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                            <span className="text-sm text-neutral-600">{deploy.start_date}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                            <span className="text-sm text-neutral-600">{deploy.end_date || "—"}</span>
+                        </td>
+                        <td className="px-6 py-4">
+        <span
+            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                deploy.status === 'Active'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-neutral-100 text-neutral-700'
+            }`}
+        >
+          {deploy.status}
+        </span>
+                        </td>
+                        <td className="px-6 py-4">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button className="p-1.5 hover:bg-neutral-100 rounded-md">
+                                        <MoreVertical className="w-4 h-4 text-neutral-600" />
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="p-2 bg-gray-100 border-1 border-gray-200 text-xs w-auto space-y-3">
+                                    {(deploy.status !== "Pending") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
+                                                                         onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "Pending")}
+                                    ><span className="flex"><LoaderIcon size={11} className="text-xs text-gray-600" /></span> Set: Pending</p>}
+                                    {(deploy.status !== "Deployed") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
+                                                                          onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "Deployed")}
+                                    ><span className="flex"><Users2 size={11} className="text-xs text-gray-600" /><BookmarkCheck size={11} className="text-xs text-gray-600" /></span> Set: Deployed</p>}
+                                    {(deploy.deploy_status !== "completed") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
+                                                                                  onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "completed")}
+                                    ><UserCheck2 size={11} className="text-xs text-gray-600" /> Set: Completed</p>}
+                                    <p className="flex cursor-pointer flex-row items-center justify-start gap-2" onClick={()=>{
+
+                                    }}><Users2 size={11} className="text-xs text-gray-600" /> View health workers</p>
+                                </PopoverContent>
+                            </Popover>
+                        </td>
+                    </tr>
+                );
+            })}
             </tbody>
           </table>
         </div>

@@ -187,7 +187,7 @@ export default function HealthWorkerProfile() {
                         ))}
                     </div>
                     <div className="w-full flex flex-col lg:flex-row gap-1">
-                        <Card className="w-full lg:w-6/12 p-3 md:p-6 rounded-lg"><DeploymentSummary imgSrc={imgSrc}  /></Card>
+                        <Card className="w-full lg:w-6/12 p-3 md:p-6 rounded-lg"><DeploymentSummary imgSrc={imgSrc} worker={worker}  /></Card>
                         <div className="w-full lg:w-6/12 rounded-none"><TrainingSection  /></div>
                     </div>
                 </div>
