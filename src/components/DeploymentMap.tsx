@@ -111,13 +111,13 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
                 </p>
             </div>
 
-            <div className="relative  rounded-xl bg-white border border-neutral-200 h-150 overflow-hidden">
+            <div className="relative  rounded-xl bg-white border border-neutral-200 h-200 overflow-hidden">
                 <MapContainer
                     center={[-13.4, 34.3015]}
                     zoom={7}
                     minZoom={7}
                     maxZoom={9}
-                    style={{ height: "600px", width: "100%", backgroundColor: "white" }}
+                    style={{ height: "800px", width: "100%", backgroundColor: "white" }}
                 >
                     <GeoJSON
                         key={JSON.stringify(activeDeployments)}

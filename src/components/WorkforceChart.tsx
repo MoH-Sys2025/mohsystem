@@ -7,6 +7,12 @@ export function WorkforceChart() {
     { month: 'Apr', deployed: 138, available: 162 },
     { month: 'May', deployed: 155, available: 145 },
     { month: 'Jun', deployed: 156, available: 144 },
+    { month: 'Jul', deployed: 156, available: 14 },
+    { month: 'Aug', deployed: 156, available: 104 },
+    { month: 'Sep', deployed: 156, available: 104 },
+    { month: 'Oct', deployed: 156, available: 170 },
+    { month: 'Nov', deployed: 156, available: 50 },
+    { month: 'Dec', deployed: 156, available: 70 },
   ];
 
   return (
@@ -17,8 +23,12 @@ export function WorkforceChart() {
       </div>
 
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%" className="border">
-            <BarChart data={data}>
+        <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}
+                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                      barCategoryGap="14%"  // removes space between categories
+                      barGap={2}           // removes space between bars within a category
+            >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
                 <XAxis
                     dataKey="month"
@@ -52,7 +62,7 @@ export function WorkforceChart() {
                 />
                 <Bar
                     dataKey="available"
-                    fill="#d4d4d4"
+                    fill="#acf6cc"
                     radius={[40, 40, 40, 40]}
                     isAnimationActive={false}
                     onMouseEnter={() => {}}

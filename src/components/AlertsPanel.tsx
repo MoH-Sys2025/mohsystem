@@ -30,12 +30,12 @@ export function AlertsPanel() {
 
   return (
     <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6 h-full">
-      <div className="mb-6">
+      <div className="mb-2">
         <h2 className="text-neutral-900 mb-1">Active Alerts</h2>
         <p className="text-sm text-neutral-500">Critical updates and notifications</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 md:max-h-70 md:overflow-y-scroll overflow-hidden max-h-full">
         {alerts.map((alert, index) => {
           const getIcon = () => {
             switch (alert.type) {
@@ -62,7 +62,7 @@ export function AlertsPanel() {
           return (
             <div
               key={index}
-              className="border border-neutral-200 rounded-lg p-4 hover:shadow-sm transition-all cursor-pointer"
+              className="border border-neutral-200  overscroll-y-auto rounded-lg p-2 hover:shadow-sm transition-all cursor-pointer"
             >
               <div className="flex gap-3">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${getColorClasses()}`}>
@@ -71,8 +71,8 @@ export function AlertsPanel() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-neutral-900 mb-1">{alert.title}</p>
                   <p className="text-sm text-neutral-600 mb-1">{alert.description}</p>
-                  <span className="text-xs text-neutral-500">{alert.time}</span>
                 </div>
+                  <span className="text-xs text-neutral-500">{alert.time}</span>
               </div>
             </div>
           );

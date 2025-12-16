@@ -79,7 +79,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 md:gap-1 lg:gap-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-1 md:gap-1 lg:gap-1">
 
           {starts.map((item, index) => (
               <StartCard2 key={index} title={item.title} value={item.value} change={item.change} icon={item.icon} classData="" />
@@ -95,11 +95,11 @@ export function DashboardHome({onNavigate}: DashboardProps) {
         </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-2 lg:col-span-3 gap-1">
-              <div className="col-span-1" >
+              <div className="col-span-2" >
                   {/* Workforce Analytics */}
                   <WorkforceChart />
               </div>
-              <div className="col-span-1" >
+              <div className="col-span-2" >
                   <AlertsPanel />
               </div>
           </div>
