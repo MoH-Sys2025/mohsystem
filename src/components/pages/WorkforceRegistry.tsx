@@ -325,9 +325,9 @@ return (
 
                                     <td className="px-3 py-1 text-xs whitespace-nowrap">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-medium">
-                                                {formatInitials(worker)}
-                                            </div>
+                                            {/*<div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-medium">*/}
+                                            {/*    {formatInitials(worker)}*/}
+                                            {/*</div>*/}
                                             <span className="text-sm font-medium text-neutral-900">
                                                 {worker.first_name} {worker.last_name}
                                             </span>
