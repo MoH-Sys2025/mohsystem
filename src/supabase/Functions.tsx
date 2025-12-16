@@ -399,7 +399,6 @@ export const api = {
         if (error) toast.error("Error fetching cadres");
         return data;
     },
-
     async getWorkforceStats() {
         // -----------------------------
         // 🕒 UTC month boundary

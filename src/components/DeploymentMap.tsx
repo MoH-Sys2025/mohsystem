@@ -4,16 +4,21 @@ import {JSX, useEffect, useMemo, useState} from "react";
 import { api } from "@/supabase/Functions.tsx";
 import { districts } from "@/supabase/districts.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {Maximize2} from "lucide-react";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
+import {LoaderIcon, Maximize2} from "lucide-react";
 
 interface DeployMapProps {
     onNavigate: (page: string) => void;
 }
 export function DeploymentMap({onNavigate}: DeployMapProps) {
     const [activeDeployments, setActiveDeployments] = useState<Record<string, number>>({});
+    const [displayMode, setDisplayMode] = useState<'deployments' | 'workforce'>('deployments');
+    const [workforceByDistrict, setWorkforceByDistrict] = useState<Record<string, number>>({});
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
         const fetchActiveDeployData = async () => {
+            setIsLoading(true)
             const counts = await api.getActiveDeploymentsByDistrict();
 
             const districtIdToName = Object.fromEntries(
@@ -30,24 +35,49 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
             }
 
             setActiveDeployments(activeDeploymentsByName);
+            setIsLoading(false)
         };
 
+        const fetchWorkforce = async () => {
+            const personnel = await api.listPersonnel(10000); // fetch all personnel
+            const districtCounts: Record<string, number> = {};
+
+            personnel.forEach((p: any) => {
+                const district = p.metadata?.district;
+                if (!district) return;
+                districtCounts[district] = (districtCounts[district] ?? 0) + 1;
+            });
+            console.log(districtCounts);
+            setWorkforceByDistrict(districtCounts);
+        };
+
+        fetchWorkforce();
         fetchActiveDeployData();
     }, []);
 
     /* ---------------------------
-       🎨 Color scale helper
-    ---------------------------- */
-    const getColor = (value: number) => {
-        if (value >= 50) return "#7f1d1d";   // dark red
-        if (value >= 41) return "#b91c1c";   // red
-        if (value >= 31) return "#dc2626";   // light red
-        if (value >= 21) return "#f97316";   // orange
-        if (value >= 11) return "#facc15";   // yellow
-        if (value >= 1)  return "#86efac";   // light green
-        return "#e5e7eb";                    // 0 (gray)
+   🎨 Color scale helper
+---------------------------- */
+    const getColor = (value: number, mode: 'deployments' | 'workforce') => {
+        if (mode === 'deployments') {
+            if (value >= 50) return '#7f1d1d';
+            if (value >= 41) return '#b91c1c';
+            if (value >= 31) return '#dc2626';
+            if (value >= 21) return '#f97316';
+            if (value >= 11) return '#facc15';
+            if (value >= 1)  return '#86efac';
+            return '#e5e7eb';
+        } else {
+            // workforce thresholds
+            if (value >= 151) return '#7f1d1d';
+            if (value >= 121) return '#b91c1c';
+            if (value >= 91)  return '#dc2626';
+            if (value >= 61)  return '#f97316';
+            if (value >= 31)  return '#facc15';
+            if (value >= 1)   return '#86efac';
+            return '#e5e7eb';
+        }
     };
-
 
     /* ---------------------------
        ⚡ Memoized style function
@@ -55,17 +85,21 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
     const geoJsonStyle = useMemo(
         () => (feature: any) => {
             const name = feature.properties.name;
-            const deployments = activeDeployments[name] ?? 0;
+            const value = displayMode === 'deployments'
+                ? activeDeployments[name] ?? 0
+                : workforceByDistrict[name] ?? 0;
 
             return {
-                fillColor: getColor(deployments),
-                color: "#1f2937",
+                fillColor: getColor(value, displayMode),
+                color: '#1f2937',
                 weight: 1,
                 fillOpacity: 0.7,
             };
         },
-        [activeDeployments]
+        [activeDeployments, workforceByDistrict, displayMode]
     );
+
+
 
     /* ---------------------------
        📊 Legend
@@ -73,20 +107,35 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
     const Legend = () => (
         <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg border border-neutral-200 p-3 shadow-sm text-xs">
             <div className="font-medium text-neutral-800 mb-2">
-                Active Deployments
+                {displayMode === 'deployments' ? 'Active Deployments' : 'Workforce'}
             </div>
 
             <div className="space-y-1">
-                <LegendItem color="#e5e7eb" label="0" />
-                <LegendItem color="#86efac" label="1 – 10" />
-                <LegendItem color="#facc15" label="11 – 20" />
-                <LegendItem color="#f97316" label="21 – 30" />
-                <LegendItem color="#dc2626" label="31 – 40" />
-                <LegendItem color="#b91c1c" label="41 – 50" />
-                <LegendItem color="#7f1d1d" label="50+" />
+                {displayMode === 'deployments' ? (
+                    <>
+                        <LegendItem color="#e5e7eb" label="0" />
+                        <LegendItem color="#86efac" label="1 – 10" />
+                        <LegendItem color="#facc15" label="11 – 20" />
+                        <LegendItem color="#f97316" label="21 – 30" />
+                        <LegendItem color="#dc2626" label="31 – 40" />
+                        <LegendItem color="#b91c1c" label="41 – 50" />
+                        <LegendItem color="#7f1d1d" label="50+" />
+                    </>
+                ) : (
+                    <>
+                        <LegendItem color="#e5e7eb" label="0" />
+                        <LegendItem color="#86efac" label="1 – 30" />
+                        <LegendItem color="#facc15" label="31 – 60" />
+                        <LegendItem color="#f97316" label="61 – 90" />
+                        <LegendItem color="#dc2626" label="91 – 120" />
+                        <LegendItem color="#b91c1c" label="121 – 150" />
+                        <LegendItem color="#7f1d1d" label="151+" />
+                    </>
+                )}
             </div>
         </div>
     );
+
 
     const LegendItem = ({ color, label }: { color: string; label: string }) => (
         <div className="flex items-center gap-2">
@@ -98,70 +147,103 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
         </div>
     );
 
-
     return (
         <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
             <div className="mb-6">
                 <div className="flex justify-between">
                     <h2 className="text-neutral-900 mb-1">Active Deployment Map</h2>
-                    <Button onClick={()=>onNavigate("deployment map")} variant="outline" size="sm" className="cursor-pointer h-8 w-8"><Maximize2 size={13} /></Button>
+                    {/*<Button onClick={()=>onNavigate("deployment map")} variant="outline" size="sm" className="cursor-pointer h-8 w-8"><Maximize2 size={13} /></Button>*/}
                 </div>
                 <p className="text-sm text-neutral-500">
                     Healthcare worker distribution across districts
                 </p>
             </div>
 
-            <div className="relative  rounded-xl bg-white border border-neutral-200 h-200 overflow-hidden">
-                <MapContainer
-                    center={[-13.4, 34.3015]}
-                    zoom={7}
-                    minZoom={7}
-                    maxZoom={9}
-                    style={{ height: "800px", width: "100%", backgroundColor: "white" }}
-                >
-                    <GeoJSON
-                        key={JSON.stringify(activeDeployments)}
-                        data={malawiDistricts}
-                        style={geoJsonStyle}
-                        onEachFeature={(feature, layer) => {
-                            const districtName = feature.properties.name;
-                            const deployments = activeDeployments[districtName] ?? 0;
+            <div className="relative rounded-xl bg-white border border-neutral-200 h-200 overflow-hidden">
+                <div className="absolute top-4 right-4 z-40 ">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button size="sm" variant="outline">Display Options</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-40" >
+                            <div className="flex flex-col justify-start font-normal gap-1">
+                                <Button
+                                    size="xs" className="font-normal text-left text-[12px] flex justify-start"
+                                    variant="ghost"
+                                    onClick={() => setDisplayMode('deployments')}>
+                                    Active Deployments
+                                </Button>
+                                <Button
+                                    size="xs"
+                                    className="font-normal text-left text-[12px] flex justify-start"
+                                    variant="ghost"
+                                    onClick={() => setDisplayMode('workforce')}>
+                                    Workforce
+                                </Button>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                {isLoading ? (
+                    /* 🔄 Map-only loader */
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-50">
+                        <LoaderIcon className="animate-spin" />
+                    </div>
+                ) : (
+                    <MapContainer
+                        center={[-13.4, 34.3015]}
+                        zoom={7}
+                        minZoom={7}
+                        maxZoom={9}
+                        style={{ height: "800px", width: "100%", backgroundColor: "white" }}>
 
-                            // ✅ Permanent marker ONLY if deployments > 0
-                            if (deployments > 0) {
-                                layer.bindTooltip(
-                                    `<div class="district-marker">
-                <div class="district-name">${districtName} ${deployments}</div>
-             </div>`,
-                                    {
-                                        permanent: true,
-                                        direction: "center",
-                                        className: "district-tooltip-wrapper",
-                                        opacity: 1,
-                                    }
+                        <GeoJSON
+                            key={JSON.stringify({ activeDeployments, workforceByDistrict, displayMode })}
+                            data={malawiDistricts}
+                            style={geoJsonStyle}
+                            onEachFeature={(feature, layer) => {
+                                const districtName = feature.properties.name;
+                                const deployments = activeDeployments[districtName] ?? 0;
+                                const workforce = workforceByDistrict[districtName] ?? 0;
+                                const value = displayMode === 'deployments' ? deployments : workforce;
+
+                                // Only show permanent marker if value > 0
+                                if (value > 0) {
+                                    layer.bindTooltip(
+                                        `<div class="district-marker">
+                    <div class="district-name">
+                        ${districtName}: ${value}
+                    </div>
+                </div>`,
+                                        {
+                                            permanent: true,
+                                            direction: 'center',
+                                            className: 'district-tooltip-wrapper',
+                                            opacity: 1,
+                                        }
+                                    );
+                                } else {
+                                    // Remove any existing tooltip if switching mode to 0
+                                    layer.unbindTooltip();
+                                }
+
+                                layer.bindPopup(
+                                    `<strong>${districtName}</strong><br/>${value} ${
+                                        displayMode === 'deployments' ? 'active deployments' : 'Health workers'
+                                    }`
                                 );
-                            }
 
-                            // Popup for all districts
-                            layer.bindPopup(
-                                `<strong>${districtName}</strong><br/>${deployments} active deployments`
-                            );
+                                layer.on('mouseover', () => layer.setStyle({ weight: 2, fillOpacity: 0.9 }));
+                                layer.on('mouseout', () => layer.setStyle({ weight: 1, fillOpacity: 0.7 }));
+                            }}
+                        />
 
-                            // Hover effect
-                            layer.on("mouseover", () => {
-                                layer.setStyle({ weight: 2, fillOpacity: 0.9 });
-                            });
-
-                            layer.on("mouseout", () => {
-                                layer.setStyle({ weight: 1, fillOpacity: 0.7 });
-                            });
-                        }}
-
-                    />
-                </MapContainer>
+                    </MapContainer>
+                )}
 
                 <Legend />
             </div>
+
         </div>
     );
 }
