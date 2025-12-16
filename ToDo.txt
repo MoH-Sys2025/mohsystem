@@ -24,3 +24,6 @@ COMPETENCY TRACKING
 
 DEPLOYMENT
 ......................
+npx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=neutral&theme=lime&iconLibrary=lucide&font=inter&menuAccent=subtle&menuColor=default&radius=large&template=vite" --template vite
+pnpm dlx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=neutral&theme=lime&iconLibrary=lucide&font=inter&menuAccent=subtle&menuColor=default&radius=large&template=vite" --template vite
+bunx --bun shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=neutral&theme=lime&iconLibrary=lucide&font=inter&menuAccent=subtle&menuColor=default&radius=large&template=vite" --template vite

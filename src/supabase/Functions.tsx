@@ -207,6 +207,26 @@ export const api = {
 
         return unique;
     },
+    async getActiveDeploymentsByDistrict() {
+        // Query only active deployments
+        const { data, error } = await supabase
+            .from('deployments')
+            .select('assigned_district_id')
+            .eq('deploy_status', 'active');
+
+        if (error) {
+            toast.error('Error fetching active deployments:');
+            return {};
+        }
+
+        // Count active deployments per district
+        const counts: Record<string, number> = {};
+        data.forEach((row) => {
+            const district = row.assigned_district_id;
+            counts[district] = (counts[district] || 0) + 1;
+        });
+        return counts;
+    },
     async getDeployedDistricts() {
         const { data, error } = await supabase
             .from("deployments")

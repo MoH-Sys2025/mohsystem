@@ -16,6 +16,7 @@ import Notifications from "@/components/pages/Notifications.tsx";
 import {AddWorker} from "@/components/pages/AddHCW.tsx";
 import AddHealthyFacility from "@/components/pages/AddHealthFacility.tsx";
 import OutbreakForm from "@/components/pages/OutbreakForm.tsx";
+import {DeploymentMap} from "@/components/DeploymentMap.tsx";
 interface DashboardProps {
   onLogout: () => void;
 }
@@ -31,6 +32,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
             return <NewDeploymentForm onSuccess={undefined} />;
       case 'workforce':
         return <WorkforceRegistry onNavigate={setCurrentPage}  />;
+        case 'deployment map':
+            return <DeploymentMap onNavigate={setCurrentPage}  />;
       case 'documents':
         return <Documents />;
       case 'integrations':

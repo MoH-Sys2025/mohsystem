@@ -10,40 +10,56 @@ export function WorkforceChart() {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
+    <div className="rounded-xl bg-white border border-neutral-200 p-2 md:p-6 h-full">
       <div className="mb-6">
         <h2 className="text-neutral-900 mb-1">Workforce Deployment Trends</h2>
         <p className="text-sm text-neutral-500">Monthly deployment vs availability statistics</p>
       </div>
 
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
-            <XAxis 
-              dataKey="month" 
-              stroke="#a3a3a3"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis 
-              stroke="#a3a3a3"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e5e5e5',
-                borderRadius: '8px',
-                fontSize: '12px',
-              }}
-            />
-            <Bar dataKey="deployed" fill="#10b981" radius={[40, 40, 40, 40]} />
-            <Bar dataKey="available" fill="#d4d4d4" radius={[40, 40, 40, 40]} />
-          </BarChart>
+        <ResponsiveContainer width="100%" height="100%" className="border">
+            <BarChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
+                <XAxis
+                    dataKey="month"
+                    stroke="#a3a3a3"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                />
+                <YAxis
+                    stroke="#a3a3a3"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                />
+                <Tooltip
+                    contentStyle={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e5e5e5',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                    }}
+                />
+                <Bar
+                    dataKey="deployed"
+                    fill="#10b981"
+                    radius={[40, 40, 40, 40]}
+                    isAnimationActive={false}
+                    // Disable hover highlight
+                    onMouseEnter={() => {}}
+                    onMouseLeave={() => {}}
+                />
+                <Bar
+                    dataKey="available"
+                    fill="#d4d4d4"
+                    radius={[40, 40, 40, 40]}
+                    isAnimationActive={false}
+                    onMouseEnter={() => {}}
+                    onMouseLeave={() => {}}
+                />
+            </BarChart>
+
         </ResponsiveContainer>
       </div>
 

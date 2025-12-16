@@ -64,7 +64,7 @@ export default function HealthWorkerProfile() {
 
     const barcharts = [
         <div className="md:col-span-6 lg:col-span-3 p-4 text-xs space-y-2 border shadow-sm border-neutral-200 rounded-lg">
-            <div className="font-semibold">Quick Tasks</div>
+            <div className="font-semibold">Quick Links</div>
             <div className="space-y-1 space-x-2 ">
                 <Button size="xs" variant="outline" className="p-2 py-0">Documents</Button>
                 <Button size="xs" variant="outline" className="p-2 py-0">Deploy</Button>

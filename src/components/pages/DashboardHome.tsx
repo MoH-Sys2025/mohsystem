@@ -1,4 +1,4 @@
-import {Users, UserCheck, AlertTriangle, TrendingUp, Menu, MoreVertical} from 'lucide-react';
+import {Users, UserCheck, AlertTriangle, TrendingUp, Menu, MoreVertical, Icon} from 'lucide-react';
 import { StatCard } from '../StatCard';
 import { ActivityFeed } from '../ActivityFeed';
 import { DeploymentMap } from '../DeploymentMap';
@@ -8,6 +8,7 @@ import {Button} from "@/components/ui/button.tsx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import {useEffect, useState} from "react";
 import {api} from "@/supabase/Functions.tsx";
+import {StartCard2} from "@/components/StartCard2.tsx";
 
 interface DashboardProps {
     onNavigate?: (page: string) => void;
@@ -33,9 +34,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
             setOutbreaksCount(activeOutbreaks)
             setDeploymentsCount(activeDeploy)
             setDeployments(data2);
-            console.log(resRates)
             setResRate(resRates.length)
-
         };
 
         fetchData();
@@ -48,10 +47,17 @@ export function DashboardHome({onNavigate}: DashboardProps) {
         {page: "form trainings", name: "Trainings"},
         {page: "create outbreak", name: "Add outbreak"},
     ]
+
+    const starts = [
+        {title:"Total workforce", icon: Users, change: 7, value: workforce.length},
+        {title:"Active Deployments", icon: UserCheck, change: 3, value: activeDeploy},
+        {title:"Active Outbreaks", icon: AlertTriangle, change: -10, value: activeOutbreaks},
+        {title:"Response Rate", icon: TrendingUp, change: -2, value: resRate},
+    ]
   return (
-    <div className="space-y-8 p-6 px-1 md:p-6">
+    <div className="space-y-1 p-6 px-1 md:p-4">
       {/* Header */}
-      <div className="flex flex-row justify-between items-start">
+      <div className="flex flex-row justify-between items-start mb-4">
         <div>
             <h1 className="text-neutral-900 mb-2">Dashboard Overview</h1>
             <p className="text-neutral-500">Monitor healthcare workforce and outbreak response across Malawi</p>
@@ -73,63 +79,33 @@ export function DashboardHome({onNavigate}: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-              title="Total Workforce"
-              value={workforce.length}
-              change="+12.5%"
-              trend="up"
-              icon={Users}
-              color="emerald"
-          />
-        <StatCard
-          title="Active Deployments"
-          value={activeDeploy}
-          change="+8.3%"
-          trend="up"
-          icon={UserCheck}
-          color="blue"
-        />
-        <StatCard
-          title="Active Outbreaks"
-          value={activeOutbreaks}
-          change="-25%"
-          trend="down"
-          icon={AlertTriangle}
-          color="amber"
-        />
-        <StatCard
-          title="Response Rate"
-          value={resRate + " %"}
-          change="+5.1%"
-          trend="up"
-          icon={TrendingUp}
-          color="emerald"
-        />
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 md:gap-1 lg:gap-1">
+
+          {starts.map((item, index) => (
+              <StartCard2 key={index} title={item.title} value={item.value} change={item.change} icon={item.icon} classData="" />
+          ))}
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-1">
         {/* Deployment Map */}
         <div className="lg:col-span-2">
             {/*<WorkerCadreDistribution />*/}
           <DeploymentMap />
         </div>
 
-        {/* Alerts */}
-        <div>
-          <AlertsPanel />
-        </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-2 lg:col-span-3 gap-1">
+              <div className="col-span-1" >
+                  {/* Workforce Analytics */}
+                  <WorkforceChart />
+              </div>
+              <div className="col-span-1" >
+                  <AlertsPanel />
+              </div>
+          </div>
       </div>
-
-      {/* Bottom Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Workforce Analytics */}
-        <WorkforceChart />
-
-        {/* Recent Activity */}
         <ActivityFeed />
-      </div>
+
     </div>
   );
 }
