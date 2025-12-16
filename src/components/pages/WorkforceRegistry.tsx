@@ -80,9 +80,9 @@ const filterOptions = [
 ];
 
 const fieldMap: Record<string, string | null> = {
-    role: "cadres.name",
-    district: "current_district_id",
-    status: "metadata.worker_status[1]",
+    role: "role",
+    district: "metadata.district",
+    status: "metadata.worker_status",
     certifications: "qualifications",
     competencies: "metadata.competencies",
 };
@@ -193,8 +193,7 @@ return (
 
                             <button
                                 onClick={() => setFilterOpen(!filterOpen)}
-                                className="px-4 py-2 bg-white border border-neutral-200 col-span-7 md:col-span-1 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm"
-                            >
+                                className="px-4 py-2 bg-white border border-neutral-200 col-span-7 md:col-span-1 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm">
                                 <Filter className="w-4 h-4" />
                                 Filters
                             </button>
@@ -222,8 +221,7 @@ return (
                                             <button
                                                 key={opt.key}
                                                 onClick={() => setSelectedFilter(opt.key)}
-                                                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100"
-                                            >
+                                                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100">
                                                 {opt.label}
                                             </button>
                                         ))}

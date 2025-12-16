@@ -398,7 +398,49 @@ export const api = {
 
         if (error) toast.error("Error fetching cadres");
         return data;
+    },
+
+    async getWorkforceStats() {
+        // -----------------------------
+        // 🕒 UTC month boundary
+        // -----------------------------
+        const now = new Date();
+        const startOfCurrentMonth = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+        );
+
+        // ------------------------------------
+        // Workforce before current month
+        // ------------------------------------
+        const { count: previousCount, error: prevError } = await supabase
+            .from("personnel")
+            .select("*", { count: "exact", head: true })
+            .lt("created_at", startOfCurrentMonth.toISOString());
+
+        if (prevError) {
+            throw prevError;
+        }
+
+        // ------------------------------------
+        // Workforce up to now (total)
+        // ------------------------------------
+        const { count: currentCount, error: currError } = await supabase
+            .from("personnel")
+            .select("*", { count: "exact", head: true });
+
+        if (currError) {
+            throw currError;
+        }
+
+        const total = currentCount ?? 0;
+        const previous = previousCount ?? 0;
+        console.log([total, total - previous])
+        return {
+            total: total,
+            change: total - previous,
+        };
     }
+
 
 }
 

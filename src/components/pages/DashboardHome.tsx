@@ -16,6 +16,7 @@ interface DashboardProps {
 
 export function DashboardHome({onNavigate}: DashboardProps) {
     const [workforce, setWorkforce] = useState([])
+    const [workforceStat, setWorkforceStat] = useState({total:0, change:0});
     const [deployments, setDeployments] = useState([])
     const [activeDeploy, setDeploymentsCount] = useState<number>(0);
     const [activeOutbreaks, setOutbreaksCount] = useState<number>(0);
@@ -23,17 +24,19 @@ export function DashboardHome({onNavigate}: DashboardProps) {
 
     useEffect(() => {
         const fetchData = async () => {
-            const [data, data2, activeDeploy, activeOutbreaks, resRates] = await Promise.all([
+            const [data, workfoceStatsData, data2, activeDeploy, activeOutbreaks, resRates] = await Promise.all([
                 api.listPersonnel(10000),
+                api.getWorkforceStats(),
                 api.listDeployments(10000),
                 api.getActiveDeployments(),
                 api.getActiveOutBreaks(),
                 api.getOutbreakInfo()
             ])
-            setWorkforce(data);
+            setWorkforce(data)
+            setWorkforceStat(workfoceStatsData)
             setOutbreaksCount(activeOutbreaks)
             setDeploymentsCount(activeDeploy)
-            setDeployments(data2);
+            setDeployments(data2)
             setResRate(resRates.length)
         };
 
@@ -49,7 +52,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
     ]
 
     const starts = [
-        {title:"Total workforce", icon: Users, change: 7, value: workforce.length},
+        {title:"Total workforce", icon: Users, change: workforceStat.total-workforceStat.change, value: workforce.length},
         {title:"Active Deployments", icon: UserCheck, change: 3, value: activeDeploy},
         {title:"Active Outbreaks", icon: AlertTriangle, change: -10, value: activeOutbreaks},
         {title:"Response Rate", icon: TrendingUp, change: -2, value: resRate},
