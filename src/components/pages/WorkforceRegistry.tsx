@@ -87,12 +87,21 @@ const fieldMap: Record<string, string | null> = {
     competencies: "metadata.competencies",
 };
 
-function getField(worker: any, key: string | null) {
-    if (!key) return null;
-    const path = fieldMap[key];
-    if (!path) return null;
-    return path.split(".").reduce((obj: any, p: string) => obj?.[p], worker);
-}
+    function getField(worker: any, key: string | null) {
+        if (!key) return null;
+        const path = fieldMap[key];
+        if (!path) return null;
+
+        const value = path.split(".").reduce((obj: any, p: string) => obj?.[p], worker);
+
+        // ✅ If worker_status array → return meaningful value
+        if (key === "status" && Array.isArray(value)) {
+            return value[1] ?? value[0]; // uses "Deployed", "Available", etc
+        }
+
+        return value;
+    }
+
 
 const normalizeForSearch = (val: any) =>
     val === null || val === undefined
