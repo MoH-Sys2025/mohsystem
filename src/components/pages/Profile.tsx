@@ -17,18 +17,17 @@ import {Button} from "@/components/ui/button.tsx";
 import {api, formatDate, getAge} from "@/supabase/Functions.tsx";
 import React from "react";
 import {Badge} from "@/components/ui/badge.tsx";
-import {useSelectedWorker} from "@/components/DataContext.tsx";
+import {useSelectedMOHData} from "@/components/DataContext.tsx";
 
 export default function HealthWorkerProfile() {
-    // console.log(selectedWorker);
 
     const [worker, setWorker] = useState(null);
     const [age, setAge] = useState(0)
     const [status, setStatus] = useState([])
     const [linkedSystems, setLinks] = useState([])
     const [cadle, setCadle] = useState("")
-    const { selectedWorker } = useSelectedWorker();
-    const data = selectedWorker
+    const { selectedMOHData } = useSelectedMOHData();
+    const data = selectedMOHData
     if (!data) return <p>No worker selected</p>;
 
     useEffect(() => {

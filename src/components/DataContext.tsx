@@ -2,16 +2,16 @@ import React, { createContext, useContext, useState } from "react";
 
 const SelectedWorkerContext = createContext(null);
 
-export function SelectedWorkerProvider({ children }) {
-    const [selectedWorker, setSelectedWorker] = useState(null);
+export function SelectedMOHDataProvider({ children }) {
+    const [selectedMOHData, setSelectedMOHData] = useState(null);
 
     return (
-        <SelectedWorkerContext.Provider value={{ selectedWorker, setSelectedWorker }}>
+        <SelectedWorkerContext.Provider value={{ selectedMOHData, setSelectedMOHData }}>
             {children}
         </SelectedWorkerContext.Provider>
     );
 }
 
-export function useSelectedWorker() {
+export function useSelectedMOHData() {
     return useContext(SelectedWorkerContext);
 }

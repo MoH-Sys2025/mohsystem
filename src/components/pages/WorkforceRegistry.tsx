@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
     Search,
     Filter,
     Download,
@@ -14,7 +22,7 @@ import {
 import {Button} from "@/components/ui/button.tsx";
 import {districts} from "@/supabase/districts"
 import { api } from "@/supabase/Functions.tsx";
-import {useSelectedWorker} from "@/components/DataContext.tsx";
+import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
 import {PaginationNext} from "@/components/ui/pagination.tsx";
@@ -31,12 +39,12 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [available, setAvailable] = useState<number>(0);
     const [unemployed, setUnimployed] = useState<number>(0);
     const [deployed, setDeployed] = useState<number>(0);
-const [searchTerm, setSearchTerm] = useState("");
-const [filterOpen, setFilterOpen] = useState(false);
-const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-const [filterValue, setFilterValue] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterOpen, setFilterOpen] = useState(false);
+    const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+    const [filterValue, setFilterValue] = useState<string | null>(null);
 
-const { setSelectedWorker } = useSelectedWorker();
+const { setSelectedMOHData } = useSelectedMOHData();
 
 useEffect(() => {
     async function fetchPersonnel() {
@@ -180,7 +188,7 @@ return (
                     <div className="p-6 py-3 border-b border-neutral-200 space-y-2">
                         <div className="grid-cols-2 md:grid-cols-6 gap-2 hidden md:grid">
                             {[workers.length, deployed, available, workers.length-deployed-available, workers.length-unemployed, unemployed].map((value, i) => (
-                                <div key={i} className="bg-white  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1  md:col-span-1">
+                                <div key={i} className="bg-white  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1  md:col-span-2 lg:col-span-1">
                                     <p className="text-sm text-neutral-500 mb-1 flex flex-row items-center px-2 justify-between gap-4">
                                         {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
                                     </p>
@@ -222,7 +230,7 @@ return (
                         </div>
 
                         {filterOpen && (
-                            <div className="mt-3 bg-white border border-neutral-200 absolute right-0 max-h-80 overflow-y-scroll rounded-lg p-4 shadow-sm w-64 z-30">
+                            <div className="mt-3 bg-white border border-neutral-200 z-99 top-25 absolute right-0 max-h-80 overflow-y-scroll rounded-lg p-4 shadow-sm w-64">
 
                                 {!selectedFilter && (
                                     <div className="space-y-1">
@@ -290,112 +298,121 @@ return (
                         )}
                     </div>
 
-                    <div className="overflow-x-auto w-100 md:w-270 overflow-y-scroll flex flex-col">
-                        <table className="overflow-x-scroll">
-                            <thead className="bg-neutral-50 border-b border-neutral-200">
-                            <tr>
-                                {[
-                                    "Worker ID",
-                                    "Name",
-                                    "Role",
-                                    "District",
-                                    "Status",
-                                    "Certifications",
-                                    "Competencies",
-                                    "Actions",
-                                ].map((h) => (
-                                    <th
-                                        key={h}
-                                        className="px-3 py-2 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider"
-                                        style={{ minWidth: h === "Name" ? 180 : 80 }}
-                                    >
-                                        {h}
-                                    </th>
-                                ))}
-                            </tr>
-                            </thead>
+                    <div className="overflow-x-auto">
+                        <div className={`min-w-[700px]`}>
+                            <Table className="w-full">
+                                <TableHeader>
+                                    <TableRow>
+                                        {[
+                                            "Worker ID",
+                                            "Name",
+                                            "Role",
+                                            "District",
+                                            "Status",
+                                            "Certifications",
+                                            "Competencies",
+                                            "Actions",
+                                        ].map((h) => (
+                                            <TableHead
+                                                key={h}
+                                                className={`text-xs uppercase tracking-wider px-3 py-2 text-left
+            ${["Certifications"].includes(h) ? "hidden md:table-cell" : ""}
+            ${h === "Actions" ? "sticky right-0 top-0 bg-neutral-50 z-30" : ""}
+          `}
+                                                style={{ minWidth: h === "Name" ? 100 : 60 }}
+                                            >
+                                                {h}
+                                            </TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
 
-                            <tbody className="divide-y divide-neutral-200 bg-white">
-                            {filteredWorkers.map((worker, index) => (
-                                <tr  key={worker.id} className="hover:bg-neutral-50">
+                                <TableBody>
+                                    {filteredWorkers.map((worker, index) => (
+                                        <TableRow key={worker.id} className="hover:bg-neutral-50">
+                                            <TableCell className="px-3 py-1 text-xs whitespace-nowrap">
+                                                {worker.personnel_identifier ?? worker.personnel_id ?? "—"}
+                                            </TableCell>
 
-                                    <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                        {worker.personnel_identifier ?? worker.personnel_id ?? "—"}
-                                    </td>
+                                            <TableCell className="px-3 py-1 text-xs">
+                                                <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-neutral-900">
+              {worker.first_name} {worker.last_name}
+            </span>
+                                                </div>
+                                            </TableCell>
 
-                                    <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                        <div className="flex items-center gap-3">
-                                            {/*<div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-medium">*/}
-                                            {/*    {formatInitials(worker)}*/}
-                                            {/*</div>*/}
-                                            <span className="text-sm font-medium text-neutral-900">
-                                                {worker.first_name} {worker.last_name}
-                                            </span>
-                                        </div>
-                                    </td>
+                                            <TableCell className="px-3 py-1 text-xs">
+                                                {cadres[index]?.name ?? "—"}
+                                            </TableCell>
 
-                                    <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                        {cadres[index]?.name ?? "—"}
-                                    </td>
+                                            <TableCell className="px-3 py-1 text-xs">
+                                                {worker.metadata.district ?? "—"}
+                                            </TableCell>
 
-                                    <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                        {worker.metadata.district ?? "—"}
-                                    </td>
+                                            <TableCell className="px-3 py-1 text-xs">
+          <span
+              className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                  worker.metadata?.worker_status[1] === "Deployed"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : worker.metadata?.worker_status[1] === "Available"
+                          ? "bg-blue-100 text-blue-700"
+                          : worker.metadata?.worker_status[1] === "On Leave"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-neutral-100 text-neutral-700"
+              }`}
+          >
+            {worker.metadata.worker_status[1] ?? "—"}
+          </span>
+                                            </TableCell>
 
-                                    <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                        <span
-                                            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-        worker.metadata?.worker_status[1] === "Deployed"
-            ? "bg-emerald-100 text-emerald-700"
-            : worker.metadata?.worker_status[1] === "Available"
-                ? "bg-blue-100 text-blue-700"
-                : worker.metadata?.worker_status[1] === "On Leave"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-neutral-100 text-neutral-700"
-    }`}
-                                        >
-                                            {worker.metadata.worker_status[1] ?? "—"}
-                                        </span>
-                                    </td>
+                                            <TableCell className="hidden md:table-cell px-3 py-1 text-xs">
+                                                {worker.qualifications ?? "—"}
+                                            </TableCell>
 
-                                    <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                        {worker.qualifications ?? "—"}
-                                    </td>
+                                            <TableCell className="px-2 py-1 text-xs">
+                                                <div className="flex flex-wrap gap-1 max-h-6 max-w-[220px] overflow-y-scroll">
+                                                    {Array.isArray(worker.metadata?.competencies) &&
+                                                        worker.metadata.competencies.map((c: string, i: number) => (
+                                                            <span
+                                                                key={i}
+                                                                className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded-md text-xs"
+                                                            >
+                  {c}
+                </span>
+                                                        ))}
+                                                </div>
+                                            </TableCell>
 
-                                    <td className="px-2 py-1 text-xs whitespace-nowrap">
-                                        <div className="flex flex-wrap gap-1 max-h-6 overflow-y-scroll">
-                                            {Array.isArray(worker.metadata?.competencies) &&
-                                                worker.metadata.competencies.map((c: string, i: number) => (
-                                                    <span
-                                                        key={i}
-                                                        className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded-md text-xs"
-                                                    >
-                                                        {c}
-                                                    </span>
-                                                ))}
-                                        </div>
-                                    </td>
-
-                                    <td className="px-3 py-1 text-xs whitespace-nowrap">
-                                        <Popover>
-                                            <PopoverTrigger asChild placement="top">
-                                                <button className="p-1.5 hover:bg-neutral-100 rounded-md">
-                                                    <MoreVertical className="w-4 h-4 text-neutral-600" />
-                                                </button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="p-2 bg-gray-100 border-1 border-gray-200 space-y-2">
-                                                <p className="flex cursor-pointer flex-row items-center justify-start gap-2"><Trash2 size={11} className="text-xs text-red-600" /> Delete</p>
-                                                <p className="flex cursor-pointer flex-row items-center justify-start gap-2" onClick={()=>{
-                                                    setSelectedWorker(worker); onNavigate("worker profile");
-                                                }}><User2 size={11} className="text-xs text-gray-600" /> View profile</p>
-                                            </PopoverContent>
-                                        </Popover>
-                                    </td>
-
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
+                                            <TableCell className="px-3 py-1 text-xs sticky right-0 bg-white z-10 shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
+                                                <Popover>
+                                                    <PopoverTrigger asChild placement="top">
+                                                        <button className="p-1.5 hover:bg-neutral-100 rounded-md">
+                                                            <MoreVertical className="w-4 h-4 text-neutral-600" />
+                                                        </button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="p-2 bg-white shadow-sm border border-gray-200 space-y-2 w-50 ml-auto z-20">
+                                                        <p className="flex cursor-pointer items-center gap-2">
+                                                            <Trash2 size={11} className="text-xs text-red-600" /> Delete
+                                                        </p>
+                                                        <p
+                                                            className="flex cursor-pointer items-center gap-2"
+                                                            onClick={() => {
+                                                                setSelectedMOHData(worker);
+                                                                onNavigate("worker profile");
+                                                            }}
+                                                        >
+                                                            <User2 size={11} className="text-xs text-gray-600" /> View
+                                                            profile
+                                                        </p>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
 
                     <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-neutral-200">

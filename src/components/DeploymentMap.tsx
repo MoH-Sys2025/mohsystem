@@ -5,7 +5,9 @@ import { api } from "@/supabase/Functions.tsx";
 import { districts } from "@/supabase/districts.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
-import {LoaderIcon, Maximize2} from "lucide-react";
+import {Loader2, LoaderIcon, Maximize2} from "lucide-react";
+import {Checkbox} from "@/components/ui/checkbox.tsx";
+import {Label} from "@/components/ui/label.tsx";
 
 interface DeployMapProps {
     onNavigate: (page: string) => void;
@@ -15,6 +17,8 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
     const [displayMode, setDisplayMode] = useState<'deployments' | 'workforce'>('deployments');
     const [workforceByDistrict, setWorkforceByDistrict] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(false)
+    const [showMarkers, setShowMarkers] = useState(true)
+    const [showLegend, setShowLegend] = useState(true)
 
     useEffect(() => {
         const fetchActiveDeployData = async () => {
@@ -47,7 +51,6 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
                 if (!district) return;
                 districtCounts[district] = (districtCounts[district] ?? 0) + 1;
             });
-            console.log(districtCounts);
             setWorkforceByDistrict(districtCounts);
         };
 
@@ -183,11 +186,21 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
                             </div>
                         </PopoverContent>
                     </Popover>
+                    <div className="mt-1 flex flex-col justify-start font-normal gap-1">
+                        <div className="flex items-center gap-3">
+                            <Checkbox onCheckedChange={(value)=>setShowMarkers(value)}  defaultChecked id="markers" />
+                            <Label className="font-normal" htmlFor="markers">Show markers</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Checkbox  onCheckedChange={(value)=>setShowLegend(value)} defaultChecked id="legend" />
+                            <Label className="font-normal" htmlFor="legend">Show legend</Label>
+                        </div>
+                    </div>
                 </div>
                 {isLoading ? (
                     /* 🔄 Map-only loader */
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-50">
-                        <LoaderIcon className="animate-spin" />
+                        <Loader2 className="animate-spin" />
                     </div>
                 ) : (
                     <MapContainer
@@ -208,7 +221,7 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
                                 const value = displayMode === 'deployments' ? deployments : workforce;
 
                                 // Only show permanent marker if value > 0
-                                if (value > 0) {
+                                if ((value > 0) && showMarkers) {
                                     layer.bindTooltip(
                                         `<div class="district-marker">
                     <div class="district-name">
@@ -216,7 +229,7 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
                     </div>
                 </div>`,
                                         {
-                                            permanent: true,
+                                            permanent: {showMarkers},
                                             direction: 'center',
                                             className: 'district-tooltip-wrapper',
                                             opacity: 1,
@@ -241,7 +254,7 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
                     </MapContainer>
                 )}
 
-                <Legend />
+                {showLegend && <Legend />}
             </div>
 
         </div>

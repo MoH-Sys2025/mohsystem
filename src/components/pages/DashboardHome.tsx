@@ -52,7 +52,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
     ]
 
     const starts = [
-        {title:"Total workforce", icon: Users, change: workforceStat.total-workforceStat.change, value: workforce.length},
+        {title:"Total Health workers", icon: Users, change: workforceStat.total-workforceStat.change, value: workforce.length},
         {title:"Active Deployments", icon: UserCheck, change: 3, value: activeDeploy},
         {title:"Active Outbreaks", icon: AlertTriangle, change: -10, value: activeOutbreaks},
         {title:"Response Rate", icon: TrendingUp, change: -2, value: resRate},
@@ -82,7 +82,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-1 md:gap-1 lg:gap-1">
+      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-1 md:gap-1 lg:gap-1">
 
           {starts.map((item, index) => (
               <StartCard2 key={index} title={item.title} value={item.value} change={item.change} icon={item.icon} classData="" />

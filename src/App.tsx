@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { LoginPage } from './components/LoginPage';
 import { Dashboard } from './components/Dashboard';
 import {Toaster} from "sonner";
-import {SelectedWorkerProvider} from "@/components/DataContext.tsx";
+import {SelectedMOHDataProvider} from "@/components/DataContext.tsx";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -12,9 +12,9 @@ export default function App() {
   // }
 
   return (
-      <SelectedWorkerProvider>
+      <SelectedMOHDataProvider>
           <Toaster richColors position={'top-center'}  />
           <Dashboard onLogout={() => setIsLoggedIn(false)} />
-      </SelectedWorkerProvider>
+      </SelectedMOHDataProvider>
   );
 }

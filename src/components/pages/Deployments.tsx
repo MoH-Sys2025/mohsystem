@@ -14,7 +14,8 @@ import React, {JSX, useEffect, useState} from "react";
 import {api} from "@/supabase/Functions.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover.tsx";
-import {useSelectedWorker} from "@/components/DataContext.tsx";
+import {useSelectedMOHData} from "@/components/DataContext.tsx";
+import {toast} from "sonner";
 
 interface DeployProps {
     onNavigate: (page: string) => void;
@@ -58,10 +59,9 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
                 setActiveOutbreaks(activeOutbreaks);
                 setActiveCounts(deploymentCounts);
                 setOutbreakInfo(outbreakData);
-                console.log(deploymentCounts);
 
             } catch (err) {
-                console.error("Failed to load data:", err);
+                toast.error("Failed to load data:");
             }
         };
 
