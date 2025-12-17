@@ -163,22 +163,22 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
                 <div className="absolute top-4 right-4 z-40 ">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button size="sm" variant="outline">Display Options</Button>
+                            <Button size={10} variant="outline" className="text-xs p-1 px-2">Display Options</Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-40" >
                             <div className="flex flex-col justify-start font-normal gap-1">
                                 <Button
-                                    size="xs" className="font-normal text-left text-[12px] flex justify-start"
+                                    size="xs" className="font-normal text-left text-[12px] flex justify-start py-1 pl-2"
                                     variant="ghost"
                                     onClick={() => setDisplayMode('deployments')}>
                                     Active Deployments
                                 </Button>
                                 <Button
                                     size="xs"
-                                    className="font-normal text-left text-[12px] flex justify-start"
+                                    className="font-normal text-left text-[12px] flex justify-start py-1 pl-2"
                                     variant="ghost"
                                     onClick={() => setDisplayMode('workforce')}>
-                                    Workforce
+                                    Health workers
                                 </Button>
                             </div>
                         </PopoverContent>
