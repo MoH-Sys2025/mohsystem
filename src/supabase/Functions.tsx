@@ -601,7 +601,21 @@ export const EXPORT_COLUMNS = [
     },
 ];
 
-export function exportText(data: any[], name: string, selectedColumns: string[]) {
+function pad(value: string, width: number) {
+    return value.padEnd(width, " ");
+}
+
+function centerText(text: string, width: number) {
+    if (text.length >= width) return text;
+    const leftPadding = Math.floor((width - text.length) / 2);
+    return " ".repeat(leftPadding) + text;
+}
+
+export function exportText(
+    data: any[],
+    name: string,
+    selectedColumns: string[]
+) {
     const activeColumns = EXPORT_COLUMNS.filter(c =>
         selectedColumns.includes(c.label)
     );
@@ -620,7 +634,7 @@ export function exportText(data: any[], name: string, selectedColumns: string[])
 
     // Step 2: Calculate max width for each column
     const colWidths = activeColumns.map((_, colIndex) =>
-        Math.max(...table.map(row => row[colIndex].length)) + 2 // padding
+        Math.max(...table.map(row => row[colIndex].length)) + 2
     );
 
     // Step 3: Format rows with padding
@@ -630,12 +644,22 @@ export function exportText(data: any[], name: string, selectedColumns: string[])
             .join("│")
     );
 
-    // Optional: add a separator line
+    // Separator
     const separator = colWidths
         .map(w => "─".repeat(w))
         .join("┼");
 
+    // 👉 FULL table width (important for centering)
+    const tableWidth = formatted[0].length;
+
+    // Title + meta
+    const title = name.toUpperCase();
+    const generatedOn = `Generated on: ${new Date().toLocaleString()}`;
+
     const content = [
+        centerText(title, tableWidth),
+        centerText(generatedOn, tableWidth),
+        "",
         formatted[0],     // header
         separator,
         ...formatted.slice(1),
@@ -651,7 +675,3 @@ export function exportText(data: any[], name: string, selectedColumns: string[])
     a.click();
     URL.revokeObjectURL(url);
 }
-function pad(value: string, width: number) {
-    return value.padEnd(width, " ");
-}
-

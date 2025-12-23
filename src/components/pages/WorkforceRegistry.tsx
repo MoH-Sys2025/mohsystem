@@ -28,7 +28,7 @@ import {
     Unlink,
     Trash2, User2, FileSpreadsheet, FileText, File
 } from "lucide-react";
-import {Button} from "@/components/ui/button.tsx";
+import {Button} from "@/components/ui/Button.tsx";
 import {districts} from "@/supabase/districts"
 import {api, EXPORT_COLUMNS, exportCSV, exportExcel, exportPDF, exportText} from "@/supabase/Functions.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
@@ -249,70 +249,149 @@ return (
                                 />
                             </div>
 
-                            <button
-                                onClick={() => setFilterOpen(!filterOpen)}
-                                className="px-4 py-2 bg-white border border-neutral-200 col-span-7 md:col-span-1 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm">
-                                <Filter className="w-4 h-4" />
-                                Filters
-                            </button>
+                            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
+                                        <Filter size={8} className="w-8 h-8" />
+                                        Filter
+                                    </Button>
+                                </PopoverTrigger>
+
+                                <PopoverContent
+                                    align="start"
+                                    sideOffset={8}
+                                    className="w-50 max-h-80 overflow-y-auto p-1 bg-white z-10 shadow-md rounded-md"
+                                >
+                                    {/* STEP 1: Choose filter */}
+                                    {!selectedFilter && (
+                                        <div className="space-y-0">
+                                            {filterOptions.map((opt) => (
+                                                <Button
+                                                    key={opt.key}
+                                                    variant="ghost"
+
+                                                    onClick={() => setSelectedFilter(opt.key)}
+                                                    className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                                >
+                                                    {opt.label}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* STEP 2: Choose value */}
+                                    {selectedFilter && !filterValue && (
+                                        <div className="space-y-1">
+                                            <Button
+                                                variant="ghost"
+                                                onClick={() => setSelectedFilter(null)}
+                                                className="text-xs justify-start flex text-neutral-500 underline mb-2"
+                                            >
+                                                Back
+                                            </Button>
+
+                                            {Array.from(
+                                                new Set(
+                                                    workers
+                                                        .flatMap((w) => {
+                                                            const val = getField(w, selectedFilter);
+                                                            return Array.isArray(val) ? val : [val];
+                                                        })
+                                                        .filter(Boolean)
+                                                )
+                                            ).map((value) => (
+                                                <Button
+                                                    key={String(value)}
+                                                    onClick={() => {
+                                                        setFilterValue(String(value));
+                                                        setFilterOpen(false); // auto close
+                                                    }}
+                                                    variant="ghost"
+                                                    className="w-full flex justify-start text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100"
+                                                >
+                                                    {String(value)}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* STEP 3: Selected */}
+                                    {selectedFilter && filterValue && (
+                                        <div className="flex items-center justify-between">
+                                <span className="text-sm text-neutral-700">
+                                  {selectedFilter}: <strong>{filterValue}</strong>
+                                </span>
+
+                                            <Button
+                                                onClick={() => {
+                                                    setSelectedFilter(null);
+                                                    setFilterValue(null);
+                                                }}
+                                                variant="ghost"
+                                                className="text-xs text-neutral-500 underline "
+                                            >
+                                                Clear
+                                            </Button>
+                                        </div>
+                                    )}
+                                </PopoverContent>
+                            </Popover>
 
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="col-span-3 md:col-span-1 flex items-center gap-2"
-                                    >
+                                    <Button variant="outline" className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100">
                                         <Download className="w-4 h-4" />
                                         Export
                                     </Button>
                                 </PopoverTrigger>
 
-                                <PopoverContent
-                                    align="end"
-                                    className="w-40 p-2 z-20"
-                                >
-                                    <button
+                                <PopoverContent align="start" className="w-40 p-1 pb-2 z-10 bg-white shadow-md rounded-sm">
+                                    <Button
                                         onClick={() => {
                                             setExportType("pdf");
                                             setExportDialogOpen(true);
                                         }}
-                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
                                     >
                                         <FileText className="w-4 h-4" />
                                         PDF
-                                    </button>
+                                    </Button>
 
-                                    <button
+                                    <Button
                                         onClick={() => {
                                             setExportType("csv");
                                             setExportDialogOpen(true);
                                         }}
-                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
                                     >
                                         <File className="w-4 h-4" />
                                         CSV
-                                    </button>
+                                    </Button>
 
-                                    <button
+                                    <Button
                                         onClick={() => {
                                             setExportType("excel");
                                             setExportDialogOpen(true);
                                         }}
-                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
                                     >
                                         <FileSpreadsheet className="w-4 h-4" />
                                         Excel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={() => {
                                             setExportType("txt");
                                             setExportDialogOpen(true);
                                         }}
-                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
                                     >
                                         <FileSpreadsheet className="w-4 h-4" />
                                         Text
-                                    </button>
+                                    </Button>
                                 </PopoverContent>
                             </Popover>
 
@@ -326,73 +405,6 @@ return (
                             </Button>
                         </div>
 
-                        {filterOpen && (
-                            <div className="mt-3 bg-white border border-neutral-200 z-99 top-25 absolute right-0 max-h-80 overflow-y-scroll rounded-lg p-4 shadow-sm w-64">
-
-                                {!selectedFilter && (
-                                    <div className="space-y-1">
-                                        {filterOptions.map((opt) => (
-                                            <button
-                                                key={opt.key}
-                                                onClick={() => setSelectedFilter(opt.key)}
-                                                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100">
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {selectedFilter && !filterValue && (
-                                    <div className="space-y-1">
-                                        <button
-                                            onClick={() => setSelectedFilter(null)}
-                                            className="text-xs text-neutral-500 underline mb-2"
-                                        >
-                                            Back
-                                        </button>
-
-                                        {Array.from(
-                                            new Set(
-                                                workers
-                                                    .flatMap((w) => {
-                                                        const val = getField(w, selectedFilter);
-                                                        return Array.isArray(val) ? val : [val];
-                                                    })
-                                                    .filter(Boolean)
-                                            )
-                                        ).map((value) => (
-                                            <button
-                                                key={String(value)}
-                                                onClick={() => {
-                                                    setFilterValue(String(value));
-                                                    setFilterOpen(false); // Auto-close on selection
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100"
-                                            >
-                                                {String(value)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {selectedFilter && filterValue && (
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-neutral-700">
-                                            {selectedFilter}: <strong>{filterValue}</strong>
-                                        </span>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedFilter(null);
-                                                setFilterValue(null);
-                                            }}
-                                            className="text-xs text-neutral-500 underline"
-                                        >
-                                            Clear
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
 
                     <div className="overflow-x-auto">
@@ -413,8 +425,8 @@ return (
                                             <TableHead
                                                 key={h}
                                                 className={`text-xs uppercase tracking-wider px-3 py-2 text-left
-            ${["Certifications"].includes(h) ? "hidden md:table-cell" : ""}
-            ${h === "Actions" ? "sticky right-0 top-0 bg-neutral-50 z-30" : ""}
+            ${["Certifications", "Status", "District"].includes(h) ? "hidden md:table-cell" : ""}
+            ${h === "Actions" ? "sticky right-0 top-0 bg-neutral-50" : ""}
           `}
                                                 style={{ minWidth: h === "Name" ? 100 : 60 }}
                                             >
@@ -443,7 +455,7 @@ return (
                                                 {cadres[index]?.name ?? "—"}
                                             </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs">
+                                            <TableCell className="px-3 py-1 text-xs hidden md:table-cell">
                                                 {worker.metadata.district ?? "—"}
                                             </TableCell>
 
@@ -468,7 +480,7 @@ return (
                                             </TableCell>
 
                                             <TableCell className="px-2 py-1 text-xs">
-                                                <div className="flex flex-wrap gap-1 max-h-6 max-w-[220px] overflow-y-scroll">
+                                                <div className="flex flex-wrap gap-1 max-h-6 lg:max-w-[220px] md:max-w-[200px] overflow-y-scroll">
                                                     {Array.isArray(worker.metadata?.competencies) &&
                                                         worker.metadata.competencies.map((c: string, i: number) => (
                                                             <span
@@ -481,19 +493,20 @@ return (
                                                 </div>
                                             </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs sticky right-0 bg-white z-10 shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
+                                            <TableCell className="px-3 py-1 text-xs bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
                                                 <Popover>
                                                     <PopoverTrigger asChild placement="top">
-                                                        <button className="p-1.5 hover:bg-neutral-100 rounded-md">
+                                                        <Button variant="outline" className="p-1.5 hover:bg-neutral-100 rounded-md">
                                                             <MoreVertical className="w-4 h-4 text-neutral-600" />
-                                                        </button>
+                                                        </Button>
                                                     </PopoverTrigger>
-                                                    <PopoverContent className="p-2 bg-white shadow-sm border border-gray-200 space-y-2 w-50 ml-auto z-20">
-                                                        <p className="flex cursor-pointer items-center gap-2">
-                                                            <Trash2 size={11} className="text-xs text-red-600" /> Delete
-                                                        </p>
-                                                        <p
-                                                            className="flex cursor-pointer items-center gap-2"
+                                                    <PopoverContent className="p-2 bg-white shadow-md border border-gray-200 w-35 rounded-sm ml-auto z-99">
+                                                        <Button variant="ghost" className="font-normal flex cursor-pointer items-center gap-2">
+                                                            <Trash2  className="w-4 h-4 text-red-600" /> Delete
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            className="flex justify-start cursor-pointer items-center gap-2 font-normal"
                                                             onClick={() => {
                                                                 setSelectedMOHData(worker);
                                                                 onNavigate("worker profile");
@@ -501,7 +514,7 @@ return (
                                                         >
                                                             <User2 size={11} className="text-xs text-gray-600" /> View
                                                             profile
-                                                        </p>
+                                                        </Button>
                                                     </PopoverContent>
                                                 </Popover>
                                             </TableCell>
@@ -567,6 +580,7 @@ return (
 
                     <Button
                         disabled={!fileName.trim()}
+                        variant="outline"
                         onClick={() => {
                             handleExport(); // 🔹 Make sure this function receives the current filename
                             setExportDialogOpen(false);
