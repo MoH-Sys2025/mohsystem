@@ -8,6 +8,15 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+
+import {
     Search,
     Filter,
     Download,
@@ -17,11 +26,11 @@ import {
     LoaderPinwheel,
     Link as LinkIcon,
     Unlink,
-    Trash2, User2
+    Trash2, User2, FileSpreadsheet, FileText, File
 } from "lucide-react";
 import {Button} from "@/components/ui/button.tsx";
 import {districts} from "@/supabase/districts"
-import { api } from "@/supabase/Functions.tsx";
+import {api, EXPORT_COLUMNS, exportCSV, exportExcel, exportPDF, exportText} from "@/supabase/Functions.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
@@ -44,9 +53,41 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
     const [filterValue, setFilterValue] = useState<string | null>(null);
 
-const { setSelectedMOHData } = useSelectedMOHData();
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
+    const [exportType, setExportType] = useState<"pdf" | "csv" | "excel" | "txt" | null>(null);
+    const [fileName, setFileName] = useState("workforce_registry");
+    const [selectedColumns, setSelectedColumns] = useState(
+        EXPORT_COLUMNS.map(c => c.label) // default: all columns selected
+    );
 
-useEffect(() => {
+    const { setSelectedMOHData } = useSelectedMOHData();
+
+    function handleExport() {
+        if (!exportType) return;
+
+        const safeName = fileName
+            .trim()
+            .replace(/[^\w\-]+/g, "_")
+            .toLowerCase();
+
+        switch (exportType) {
+            case "csv":
+                exportCSV(filteredWorkers, safeName, selectedColumns); // pass filename
+                break;
+            case "excel":
+                exportExcel(filteredWorkers, safeName, selectedColumns);
+                break;
+            case "pdf":
+                exportPDF(filteredWorkers, safeName, selectedColumns);
+                break;
+            case "txt":
+                exportText(filteredWorkers, safeName, selectedColumns);
+                break;
+        }
+    }
+
+
+    useEffect(() => {
     async function fetchPersonnel() {
         try {
             const data = await api.listPersonnel(1000);
@@ -215,10 +256,66 @@ return (
                                 Filters
                             </button>
 
-                            <button className="px-4 py-2 bg-white border border-neutral-200 col-span-3 md:col-span-1 text-neutral-700 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm">
-                                <Download className="w-4 h-4" />
-                                Export
-                            </button>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="col-span-3 md:col-span-1 flex items-center gap-2"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        Export
+                                    </Button>
+                                </PopoverTrigger>
+
+                                <PopoverContent
+                                    align="end"
+                                    className="w-40 p-2 z-20"
+                                >
+                                    <button
+                                        onClick={() => {
+                                            setExportType("pdf");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        PDF
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setExportType("csv");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                    >
+                                        <File className="w-4 h-4" />
+                                        CSV
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setExportType("excel");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                    >
+                                        <FileSpreadsheet className="w-4 h-4" />
+                                        Excel
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setExportType("txt");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-neutral-100"
+                                    >
+                                        <FileSpreadsheet className="w-4 h-4" />
+                                        Text
+                                    </button>
+                                </PopoverContent>
+                            </Popover>
+
                             <Button onClick={async ()=>{
                                 setLoading(true)
                                 const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
@@ -424,6 +521,66 @@ return (
             </>
         )}
         {loading && <div className="h-full mt-40 w-full flex justify-center items-center"><Loader2 className="animate-spin ease-linear" /></div>}
+        <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>
+                        Export {exportType?.toUpperCase()}
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="mt-4 space-y-1">
+                    <p className="text-sm font-medium">Select Columns</p>
+                    {EXPORT_COLUMNS.map(c => (
+                        <label key={c.label} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={selectedColumns.includes(c.label)}
+                                onChange={(e) => {
+                                    if (e.target.checked) {
+                                        setSelectedColumns(prev => [...prev, c.label]);
+                                    } else {
+                                        setSelectedColumns(prev => prev.filter(l => l !== c.label));
+                                    }
+                                }}
+                            />
+                            <span className="text-sm">{c.label}</span>
+                        </label>
+                    ))}
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">File name</label>
+                    <Input
+                        value={fileName}
+                        onChange={(e) => setFileName(e.target.value)}
+                        placeholder="Enter file name"
+                    />
+                    <p className="text-xs text-neutral-500">
+                        Extension will be added automatically
+                    </p>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
+                        Cancel
+                    </Button>
+
+                    <Button
+                        disabled={!fileName.trim()}
+                        onClick={() => {
+                            handleExport(); // 🔹 Make sure this function receives the current filename
+                            setExportDialogOpen(false);
+                        }}
+                    >
+                        Download
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+
+
+
     </div>
 );
 

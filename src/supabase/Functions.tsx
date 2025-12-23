@@ -1,5 +1,10 @@
 import {supabase} from "@/supabase/supabase.ts";
 import {toast} from "sonner";
+import * as XLSX from "xlsx";
+
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 export function getAuthHeaders() {
     const session = localStorage.getItem('mors_session');
     if (!session) {
@@ -433,7 +438,6 @@ export const api = {
 
         const total = currentCount ?? 0;
         const previous = previousCount ?? 0;
-        console.log([total, total - previous])
         return {
             total: total,
             change: total - previous,
@@ -472,3 +476,182 @@ export function formatDate(dateString: string) {
 
     return `${day} ${month} ${year}`;
 }
+
+export function exportCSV(data: any[], name: string, selectedColumns: string[]) {
+    const formatted = data.map((w, i) => {
+        const row: any = {};
+        EXPORT_COLUMNS.forEach(c => {
+            if (!selectedColumns.includes(c.label)) return;
+
+            let value = c.getValue(w, i);
+            if (Array.isArray(value)) value = value.join(", ");
+            row[c.label] = value ?? "";
+        });
+        return row;
+    });
+
+    const headers = Object.keys(formatted[0] || {});
+    const csv = [
+        headers.join(","),
+        ...formatted.map(row => headers.map(h => `"${row[h]}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+export function exportExcel(data: any[], name: string, selectedColumns: string[]) {
+    const formatted = data.map((w, i) => {
+        const row: any = {};
+        EXPORT_COLUMNS.forEach(c => {
+            if (!selectedColumns.includes(c.label)) return; // skip unselected columns
+
+            let value = c.getValue(w, i);
+            if (Array.isArray(value)) value = value.join(", ");
+            row[c.label] = value ?? "";
+        });
+        return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(formatted);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Workforce");
+    XLSX.writeFile(workbook, `${name}.xlsx`);
+}
+
+export function exportPDF(data: any[], name: string, selectedColumns: string[]) {
+    const formatted = data.map((w, i) => {
+        const row: any = {};
+        EXPORT_COLUMNS.forEach(c => {
+            if (!selectedColumns.includes(c.label)) return;
+
+            let value = c.getValue(w, i);
+            if (Array.isArray(value)) value = value.join(", ");
+            row[c.label] = value ?? "";
+        });
+        return row;
+    });
+
+    const doc = new jsPDF();
+    doc.addImage("/logo.png", "PNG", 80, 10, 50, 20); // your logo
+    doc.setFontSize(18);
+    doc.text("Workforce Registry", 105, 40, { align: "center" });
+
+    autoTable(doc, {
+        startY: 50,
+        head: [EXPORT_COLUMNS.filter(c => selectedColumns.includes(c.label)).map(c => c.label)],
+        body: formatted.map(row =>
+            EXPORT_COLUMNS.filter(c => selectedColumns.includes(c.label)).map(c => row[c.label])
+        ),
+    });
+
+    doc.save(`${name}.pdf`);
+}
+
+export const EXPORT_COLUMNS = [
+    {
+        key: "personnel_identifier",
+        label: "Worker ID",
+        getValue: (w: any) =>
+            w.personnel_identifier ?? w.personnel_id ?? "—",
+    },
+    {
+        key: "name",
+        label: "Name",
+        getValue: (w: any) =>
+            `${w.first_name ?? ""} ${w.last_name ?? ""}`.trim(),
+    },
+    {
+        key: "role",
+        label: "Role",
+        getValue: (w: any, index: number) =>
+            w.role ?? "—",
+    },
+    {
+        key: "district",
+        label: "District",
+        getValue: (w: any) =>
+            w.metadata?.district ?? "—",
+    },
+    {
+        key: "status",
+        label: "Status",
+        getValue: (w: any) =>
+            w.metadata?.worker_status?.[1] ?? "—",
+    },
+    {
+        key: "certifications",
+        label: "Certifications",
+        getValue: (w: any) =>
+            w.qualifications ?? "—",
+    },
+    {
+        key: "competencies",
+        label: "Competencies",
+        getValue: (w: any) =>
+            Array.isArray(w.metadata?.competencies)
+                ? w.metadata.competencies.join(", ")
+                : "—",
+    },
+];
+
+export function exportText(data: any[], name: string, selectedColumns: string[]) {
+    const activeColumns = EXPORT_COLUMNS.filter(c =>
+        selectedColumns.includes(c.label)
+    );
+
+    // Step 1: Build raw table (strings only)
+    const table = [
+        activeColumns.map(c => c.label),
+        ...data.map((w, i) =>
+            activeColumns.map(c => {
+                let value = c.getValue(w, i);
+                if (Array.isArray(value)) value = value.join(", ");
+                return String(value ?? "");
+            })
+        ),
+    ];
+
+    // Step 2: Calculate max width for each column
+    const colWidths = activeColumns.map((_, colIndex) =>
+        Math.max(...table.map(row => row[colIndex].length)) + 2 // padding
+    );
+
+    // Step 3: Format rows with padding
+    const formatted = table.map(row =>
+        row
+            .map((cell, i) => pad(cell, colWidths[i]))
+            .join("│")
+    );
+
+    // Optional: add a separator line
+    const separator = colWidths
+        .map(w => "─".repeat(w))
+        .join("┼");
+
+    const content = [
+        formatted[0],     // header
+        separator,
+        ...formatted.slice(1),
+    ].join("\n");
+
+    // Step 4: Download
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+function pad(value: string, width: number) {
+    return value.padEnd(width, " ");
+}
+
