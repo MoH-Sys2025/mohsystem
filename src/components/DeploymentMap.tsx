@@ -151,10 +151,10 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
     );
 
     return (
-        <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
+        <div className="bg-white rounded-xl border border-neutral-200 p-2 xs:px-3 sm:px-4 md:p-6 md:px-4">
             <div className="mb-6">
                 <div className="flex justify-between">
-                    <h2 className="text-neutral-900 mb-1">Active Deployment Map</h2>
+                    <h2 className="text-neutral-900 mb-1">HCW Distribution Map</h2>
                     {/*<Button onClick={()=>onNavigate("deployment map")} variant="outline" size="sm" className="cursor-pointer h-8 w-8"><Maximize2 size={13} /></Button>*/}
                 </div>
                 <p className="text-sm text-neutral-500">
@@ -164,11 +164,11 @@ export function DeploymentMap({onNavigate}: DeployMapProps) {
 
             <div className="relative rounded-xl bg-white border border-neutral-200 h-200 overflow-hidden">
                 <div className="absolute top-4 right-4 z-40 ">
-                    <Popover>
+                    <Popover >
                         <PopoverTrigger asChild>
                             <Button size={10} variant="outline" className="text-xs p-1 px-2">Display Options</Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-40" >
+                        <PopoverContent align="start" className="w-40" >
                             <div className="flex flex-col justify-start font-normal gap-1">
                                 <Button
                                     size="xs" className="font-normal text-left text-[12px] flex justify-start py-1 pl-2"

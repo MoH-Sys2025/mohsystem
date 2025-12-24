@@ -44,8 +44,8 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
 
                 {/* TEXT SHOWS ONLY ON lg+ */}
                 <div className="hidden lg:block">
-                    <div className="text-neutral-900">MORS</div>
-                    <div className="text-neutral-500 text-sm">Health System</div>
+                    <div className="text-neutral-900">MOERS</div>
+                    <div className="text-neutral-500 text-sm">Response System</div>
                 </div>
             </div>
 

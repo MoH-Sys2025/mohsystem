@@ -30,7 +30,15 @@ import {
 } from "lucide-react";
 import {Button} from "@/components/ui/Button.tsx";
 import {districts} from "@/supabase/districts"
-import {api, EXPORT_COLUMNS, exportCSV, exportExcel, exportPDF, exportText} from "@/supabase/Functions.tsx";
+import {
+    api,
+    EXPORT_COLUMNS,
+    exportCSV,
+    exportExcel,
+    exportPDF,
+    exportText,
+    useElementSize
+} from "@/supabase/Functions.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
@@ -41,13 +49,16 @@ interface WorkforceRegProps {
 }
 
 export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
+    const { ref, size } = useElementSize<HTMLDivElement>();
+    const contentWidth = size.width - size.paddingLeft - size.paddingRight;
+
     const [workers, setPersonnel] = useState<any[]>([]);
     const [cadres, setCadres] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [available, setAvailable] = useState<number>(0);
-    const [unemployed, setUnimployed] = useState<number>(0);
-    const [deployed, setDeployed] = useState<number>(0);
+    // const [available, setAvailable] = useState<number>(0);
+    // const [unemployed, setUnimployed] = useState<number>(0);
+    // const [deployed, setDeployed] = useState<number>(0);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterOpen, setFilterOpen] = useState(false);
     const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -95,21 +106,21 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
             setPersonnel(Array.isArray(data) ? data : []);
             setCadres(Array.isArray(cadresData) ? cadresData : []);
-            const totalAvailable = data.filter(
-                item => item.metadata?.worker_status?.includes("Available")
-            ).length;
+            // const totalAvailable = data.filter(
+            //     item => item.metadata?.worker_status?.includes("Available")
+            // ).length;
+            //
+            // const totalDeployed = data.filter(
+            //     item => item.metadata?.worker_status?.includes("Deployed")
+            // ).length;
+            //
+            // const totalUnemployed = data.filter(
+            //     item => item.employment_status.includes("Unemployed")
+            // ).length;
 
-            const totalDeployed = data.filter(
-                item => item.metadata?.worker_status?.includes("Deployed")
-            ).length;
-
-            const totalUnemployed = data.filter(
-                item => item.employment_status.includes("Unemployed")
-            ).length;
-
-            setAvailable(totalAvailable);
-            setDeployed(totalDeployed);
-            setUnimployed(totalUnemployed);
+            // setAvailable(totalAvailable);
+            // setDeployed(totalDeployed);
+            // setUnimployed(totalUnemployed);
         } catch (err: any) {
             setError(err?.message ?? String(err));
         } finally {
@@ -136,6 +147,13 @@ const fieldMap: Record<string, string | null> = {
     competencies: "metadata.competencies",
 };
 
+    const normalizeForSearch = (val: any) =>
+        val === null || val === undefined
+            ? ""
+            : typeof val === "object"
+                ? JSON.stringify(val)
+                : String(val);
+
     function getField(worker: any, key: string | null) {
         if (!key) return null;
         const path = fieldMap[key];
@@ -150,14 +168,6 @@ const fieldMap: Record<string, string | null> = {
 
         return value;
     }
-
-
-const normalizeForSearch = (val: any) =>
-    val === null || val === undefined
-        ? ""
-        : typeof val === "object"
-            ? JSON.stringify(val)
-            : String(val);
 
 const filteredWorkers = workers.filter((worker) => {
     const hay = Object.values(worker).map(normalizeForSearch).join(" ").toLowerCase();
@@ -186,6 +196,26 @@ function percentage(perValue, value1, value2) {
     );
 });
 
+    const stats = {
+        total: filteredWorkers.length,
+
+        deployed: filteredWorkers.filter(
+            w => w.metadata?.worker_status?.includes("Deployed")
+        ).length,
+
+        available: filteredWorkers.filter(
+            w => w.metadata?.worker_status?.includes("Available")
+        ).length,
+
+        unemployed: filteredWorkers.filter(
+            w => w.employment_status?.includes("Unemployed")
+        ).length,
+    };
+
+    stats.pending = stats.total - stats.deployed - stats.available;
+    stats.employed = stats.total - stats.unemployed;
+
+
 if (error)
     return (
         <div className="flex items-center gap-2 text-red-500 p-6">
@@ -203,7 +233,7 @@ const formatInitials = (worker: any) => {
 };
 
 return (
-    <div className="space-y-8 p-6 px-3">
+    <div ref={ref} className="space-y-8 p-6 px-3 border">
         <div className="flex flex-col md:flex-row md:items-start lg:items-center justify-between">
             <div>
                 <h1 className="text-neutral-900 mb-2">Workforce Registry</h1>
@@ -216,32 +246,45 @@ return (
 
         {!loading && (
             <>
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-2 md:hidden">
-                    {[workers.length, deployed, available, workers.length-deployed-available, workers.length-unemployed, unemployed].map((value, i) => (
-                        <div key={i} className="bg-white  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1  md:col-span-1">
-                            <p className="text-sm text-neutral-500 mb-1 flex flex-row items-center px-2 justify-between gap-4">
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-1 md:hidden">
+                    {[
+                        stats.total,
+                        stats.deployed,
+                        stats.available,
+                        stats.pending,
+                        stats.employed,
+                        stats.unemployed
+                    ].map((value, i) => (
+                        <div key={i} className="bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-1 col-span-3  md:col-span-1 lg:col-span-2">
+                            <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
                                 {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
                             </p>
                         </div>
                     ))}
                 </div>
                 <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden relative">
-                    <div className="p-6 py-3 border-b border-neutral-200 space-y-2">
-                        <div className="grid-cols-2 md:grid-cols-6 gap-2 hidden md:grid">
-                            {[workers.length, deployed, available, workers.length-deployed-available, workers.length-unemployed, unemployed].map((value, i) => (
-                                <div key={i} className="bg-white  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1  md:col-span-2 lg:col-span-1">
-                                    <p className="text-sm text-neutral-500 mb-1 flex flex-row items-center px-2 justify-between gap-4">
+                    <div className="md:p-6 p-2 py-3 border-b border-neutral-200 space-y-1">
+                        <div className="grid-cols-2 md:grid-cols-6 gap-1 hidden md:grid">
+                            {[
+                                stats.total,
+                                stats.deployed,
+                                stats.available,
+                                stats.pending,
+                                stats.employed,
+                                stats.unemployed,
+                            ].map((value, i) => (
+                                <div key={i} className="bg-gray-100  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
+                                    <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
                                         {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
                                     </p>
                                 </div>
                             ))}
                         </div>
-                        <div className="grid grid-cols-12 gap-2 md:gap-1">
-                            <div className="relative md:col-span-9 col-span-12">
+                        <div className="grid grid-cols-12 gap-2 gap-1 md:gap-2">
+                            <div className="relative sm:col-span-8 md:col-span-8 col-span-12">
 
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                                <input
-                                    type="text"
+                                <input type="text"
                                     placeholder="Search by name, ID, or role..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -249,166 +292,169 @@ return (
                                 />
                             </div>
 
-                            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
-                                        <Filter size={8} className="w-8 h-8" />
-                                        Filter
-                                    </Button>
-                                </PopoverTrigger>
+                            <div className="col-span-12 sm:col-span-4 flex flex-row justify-start gap-1 lg:gap-2">
+                                <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
+                                            <Filter size={8} className="w-8 h-8" />
+                                            Filter
+                                        </Button>
+                                    </PopoverTrigger>
 
-                                <PopoverContent
-                                    align="start"
-                                    sideOffset={8}
-                                    className="w-50 max-h-80 overflow-y-auto p-1 bg-white z-10 shadow-md rounded-md"
-                                >
-                                    {/* STEP 1: Choose filter */}
-                                    {!selectedFilter && (
-                                        <div className="space-y-0">
-                                            {filterOptions.map((opt) => (
+                                    <PopoverContent
+                                        align="start"
+                                        sideOffset={8}
+                                        className="w-50 max-h-80 overflow-y-auto p-1 bg-white z-10 shadow-md rounded-md"
+                                    >
+                                        {/* STEP 1: Choose filter */}
+                                        {!selectedFilter && (
+                                            <div className="space-y-0">
+                                                {filterOptions.map((opt) => (
+                                                    <Button
+                                                        key={opt.key}
+                                                        variant="ghost"
+
+                                                        onClick={() => setSelectedFilter(opt.key)}
+                                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                                    >
+                                                        {opt.label}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* STEP 2: Choose value */}
+                                        {selectedFilter && !filterValue && (
+                                            <div className="space-y-1">
                                                 <Button
-                                                    key={opt.key}
                                                     variant="ghost"
-
-                                                    onClick={() => setSelectedFilter(opt.key)}
-                                                    className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                                    onClick={() => setSelectedFilter(null)}
+                                                    className="text-xs justify-start flex text-neutral-500 underline mb-2"
                                                 >
-                                                    {opt.label}
+                                                    Back
                                                 </Button>
-                                            ))}
-                                        </div>
-                                    )}
 
-                                    {/* STEP 2: Choose value */}
-                                    {selectedFilter && !filterValue && (
-                                        <div className="space-y-1">
-                                            <Button
-                                                variant="ghost"
-                                                onClick={() => setSelectedFilter(null)}
-                                                className="text-xs justify-start flex text-neutral-500 underline mb-2"
-                                            >
-                                                Back
-                                            </Button>
+                                                {Array.from(
+                                                    new Set(
+                                                        workers
+                                                            .flatMap((w) => {
+                                                                const val = getField(w, selectedFilter);
+                                                                return Array.isArray(val) ? val : [val];
+                                                            })
+                                                            .filter(Boolean)
+                                                    )
+                                                ).map((value) => (
+                                                    <Button
+                                                        key={String(value)}
+                                                        onClick={() => {
+                                                            setFilterValue(String(value));
+                                                            setFilterOpen(false); // auto close
+                                                        }}
+                                                        variant="ghost"
+                                                        className="w-full flex justify-start text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100"
+                                                    >
+                                                        {String(value)}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        )}
 
-                                            {Array.from(
-                                                new Set(
-                                                    workers
-                                                        .flatMap((w) => {
-                                                            const val = getField(w, selectedFilter);
-                                                            return Array.isArray(val) ? val : [val];
-                                                        })
-                                                        .filter(Boolean)
-                                                )
-                                            ).map((value) => (
-                                                <Button
-                                                    key={String(value)}
-                                                    onClick={() => {
-                                                        setFilterValue(String(value));
-                                                        setFilterOpen(false); // auto close
-                                                    }}
-                                                    variant="ghost"
-                                                    className="w-full flex justify-start text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100"
-                                                >
-                                                    {String(value)}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* STEP 3: Selected */}
-                                    {selectedFilter && filterValue && (
-                                        <div className="flex items-center justify-between">
+                                        {/* STEP 3: Selected */}
+                                        {selectedFilter && filterValue && (
+                                            <div className="flex items-center justify-between">
                                 <span className="text-sm text-neutral-700">
                                   {selectedFilter}: <strong>{filterValue}</strong>
                                 </span>
 
-                                            <Button
-                                                onClick={() => {
-                                                    setSelectedFilter(null);
-                                                    setFilterValue(null);
-                                                }}
-                                                variant="ghost"
-                                                className="text-xs text-neutral-500 underline "
-                                            >
-                                                Clear
-                                            </Button>
-                                        </div>
-                                    )}
-                                </PopoverContent>
-                            </Popover>
+                                                <Button
+                                                    onClick={() => {
+                                                        setSelectedFilter(null);
+                                                        setFilterValue(null);
+                                                    }}
+                                                    variant="ghost"
+                                                    className="text-xs text-neutral-500 underline "
+                                                >
+                                                    Clear
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </PopoverContent>
+                                </Popover>
 
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100">
-                                        <Download className="w-4 h-4" />
-                                        Export
-                                    </Button>
-                                </PopoverTrigger>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className="justify-start text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
+                                            <Download className="w-4 h-4" />
+                                            Export
+                                        </Button>
+                                    </PopoverTrigger>
 
-                                <PopoverContent align="start" className="w-40 p-1 pb-2 z-10 bg-white shadow-md rounded-sm">
-                                    <Button
-                                        onClick={() => {
-                                            setExportType("pdf");
-                                            setExportDialogOpen(true);
-                                        }}
-                                        variant="ghost"
-                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                    >
-                                        <FileText className="w-4 h-4" />
-                                        PDF
-                                    </Button>
+                                    <PopoverContent align="start" className="w-40 p-1 pb-2 z-10 bg-white shadow-md rounded-sm">
+                                        <Button
+                                            onClick={() => {
+                                                setExportType("pdf");
+                                                setExportDialogOpen(true);
+                                            }}
+                                            variant="ghost"
+                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                        >
+                                            <FileText className="w-4 h-4" />
+                                            PDF
+                                        </Button>
 
-                                    <Button
-                                        onClick={() => {
-                                            setExportType("csv");
-                                            setExportDialogOpen(true);
-                                        }}
-                                        variant="ghost"
-                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                    >
-                                        <File className="w-4 h-4" />
-                                        CSV
-                                    </Button>
+                                        <Button
+                                            onClick={() => {
+                                                setExportType("csv");
+                                                setExportDialogOpen(true);
+                                            }}
+                                            variant="ghost"
+                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                        >
+                                            <File className="w-4 h-4" />
+                                            CSV
+                                        </Button>
 
-                                    <Button
-                                        onClick={() => {
-                                            setExportType("excel");
-                                            setExportDialogOpen(true);
-                                        }}
-                                        variant="ghost"
-                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                    >
-                                        <FileSpreadsheet className="w-4 h-4" />
-                                        Excel
-                                    </Button>
-                                    <Button
-                                        onClick={() => {
-                                            setExportType("txt");
-                                            setExportDialogOpen(true);
-                                        }}
-                                        variant="ghost"
-                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                    >
-                                        <FileSpreadsheet className="w-4 h-4" />
-                                        Text
-                                    </Button>
-                                </PopoverContent>
-                            </Popover>
+                                        <Button
+                                            onClick={() => {
+                                                setExportType("excel");
+                                                setExportDialogOpen(true);
+                                            }}
+                                            variant="ghost"
+                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                        >
+                                            <FileSpreadsheet className="w-4 h-4" />
+                                            Excel
+                                        </Button>
+                                        <Button
+                                            onClick={() => {
+                                                setExportType("txt");
+                                                setExportDialogOpen(true);
+                                            }}
+                                            variant="ghost"
+                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                        >
+                                            <FileSpreadsheet className="w-4 h-4" />
+                                            Text
+                                        </Button>
+                                    </PopoverContent>
+                                </Popover>
 
-                            <Button onClick={async ()=>{
-                                setLoading(true)
-                                const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
-                                setPersonnel(data);
-                                setLoading(false)
-                            }} variant="ghost" className=" w-10 ml-auto  bg-white border col-span-1 border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 text-xs">
-                                <Loader2 className="w-2 h-2" />
-                            </Button>
+                                <Button onClick={async ()=>{
+                                    setLoading(true)
+                                    const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
+                                    setPersonnel(data);
+                                    setLoading(false)
+                                }} variant="outline" className=" justify-start ml-auto text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
+                                    <Loader2 className="w-2 h-2" /> Reload
+                                </Button>
+                            </div>
                         </div>
 
                     </div>
 
                     <div className="overflow-x-auto">
-                        <div className={`min-w-[700px]`}>
+                        <div className={`overflow-x-scroll`} style={{maxWidth: size.width-20, width: contentWidth-20 || undefined }}>
+
                             <Table className="w-full">
                                 <TableHeader>
                                     <TableRow>
@@ -425,8 +471,8 @@ return (
                                             <TableHead
                                                 key={h}
                                                 className={`text-xs uppercase tracking-wider px-3 py-2 text-left
-            ${["Certifications", "Status", "District"].includes(h) ? "hidden md:table-cell" : ""}
-            ${h === "Actions" ? "sticky right-0 top-0 bg-neutral-50" : ""}
+            ${[""].includes(h) ? "hidden md:table-cell" : ""}
+            ${h === "Actions" ? "bg-neutral-50" : ""}
           `}
                                                 style={{ minWidth: h === "Name" ? 100 : 60 }}
                                             >
@@ -455,13 +501,13 @@ return (
                                                 {cadres[index]?.name ?? "—"}
                                             </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs hidden md:table-cell">
+                                            <TableCell className="px-3 py-1 text-xs">
                                                 {worker.metadata.district ?? "—"}
                                             </TableCell>
 
                                             <TableCell className="px-3 py-1 text-xs">
           <span
-              className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+              className={` px-2 py-1 inline-flex rounded-full text-xs font-medium ${
                   worker.metadata?.worker_status[1] === "Deployed"
                       ? "bg-emerald-100 text-emerald-700"
                       : worker.metadata?.worker_status[1] === "Available"
@@ -475,12 +521,12 @@ return (
           </span>
                                             </TableCell>
 
-                                            <TableCell className="hidden md:table-cell px-3 py-1 text-xs">
+                                            <TableCell className="px-3 py-1 text-xs">
                                                 {worker.qualifications ?? "—"}
                                             </TableCell>
 
                                             <TableCell className="px-2 py-1 text-xs">
-                                                <div className="flex flex-wrap gap-1 max-h-6 lg:max-w-[220px] md:max-w-[200px] overflow-y-scroll">
+                                                <div className="flex flex-wrap gap-1 max-h-6 overflow-y-scroll">
                                                     {Array.isArray(worker.metadata?.competencies) &&
                                                         worker.metadata.competencies.map((c: string, i: number) => (
                                                             <span

@@ -99,7 +99,7 @@ export function Settings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <p className="text-sm text-neutral-500 mb-1">Version</p>
-            <p className="text-sm font-medium text-neutral-900">MORS v2.4.1</p>
+            <p className="text-sm font-medium text-neutral-900">MOERS v2.4.1</p>
           </div>
           <div>
             <p className="text-sm text-neutral-500 mb-1">Last Updated</p>

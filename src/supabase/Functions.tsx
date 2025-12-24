@@ -2,6 +2,8 @@ import {supabase} from "@/supabase/supabase.ts";
 import {toast} from "sonner";
 import * as XLSX from "xlsx";
 
+import { useEffect, useRef, useState } from "react";
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -541,7 +543,7 @@ export function exportPDF(data: any[], name: string, selectedColumns: string[]) 
     const doc = new jsPDF();
     doc.addImage("/logo.png", "PNG", 80, 10, 50, 20); // your logo
     doc.setFontSize(18);
-    doc.text("Workforce Registry", 105, 40, { align: "center" });
+    doc.text("MOERS Health Workers Registry", 105, 40, { align: "center" });
 
     autoTable(doc, {
         startY: 50,
@@ -674,4 +676,56 @@ export function exportText(
     a.download = `${name}.txt`;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+// hooks/useElementSize.ts
+
+type Size = {
+    width: number;
+    height: number;
+    paddingTop: number;
+    paddingRight: number;
+    paddingBottom: number;
+    paddingLeft: number;
+};
+
+export function useElementSize<T extends HTMLElement>() {
+    const ref = useRef<T | null>(null);
+    const [size, setSize] = useState<Size>({
+        width: 0,
+        height: 0,
+        paddingTop: 0,
+        paddingRight: 0,
+        paddingBottom: 0,
+        paddingLeft: 0,
+    });
+
+    useEffect(() => {
+        if (!ref.current) return;
+
+        const element = ref.current;
+
+        const updateSize = () => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+
+            setSize({
+                width: rect.width,
+                height: rect.height,
+                paddingTop: parseFloat(style.paddingTop),
+                paddingRight: parseFloat(style.paddingRight),
+                paddingBottom: parseFloat(style.paddingBottom),
+                paddingLeft: parseFloat(style.paddingLeft),
+            });
+        };
+
+        updateSize(); // initial size
+
+        const observer = new ResizeObserver(updateSize);
+        observer.observe(element);
+
+        return () => observer.disconnect();
+    }, []);
+
+    return { ref, size };
 }
