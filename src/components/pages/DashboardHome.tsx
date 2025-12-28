@@ -7,6 +7,7 @@ import { AlertsPanel } from '../AlertsPanel';
 import {Button} from "@/components/ui/button.tsx";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import {useEffect, useState} from "react";
+import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {api} from "@/supabase/Functions.tsx";
 import {StartCard2} from "@/components/StartCard2.tsx";
 
@@ -21,6 +22,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
     const [activeDeploy, setDeploymentsCount] = useState<number>(0);
     const [activeOutbreaks, setOutbreaksCount] = useState<number>(0);
     const [resRate, setResRate] = useState(0);
+    const [isMapMaximized, setIsMapMaximized] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -82,7 +84,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-1 md:gap-1 lg:gap-1">
+      <div className={`grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-1 md:gap-1 lg:gap-1 ${isMapMaximized ? 'hidden' : 'block'}`}>
 
           {starts.map((item, index) => (
               <StartCard2 key={index} title={item.title} value={item.value} change={item.change} icon={item.icon} classData="" />
@@ -92,12 +94,12 @@ export function DashboardHome({onNavigate}: DashboardProps) {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-1">
         {/* Deployment Map */}
-        <div className="lg:col-span-2">
+        <div className={`lg:col-span-2 ${isMapMaximized ? 'lg:col-span-5':'lg:col-span-2'}`}>
             {/*<WorkerCadreDistribution />*/}
-          <DeploymentMap />
+          <DeploymentMap  maximized={isMapMaximized} onToggleMaximize={() => setIsMapMaximized(prev => !prev)} />
         </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-2 lg:col-span-3 gap-1">
+          <div className={`grid md:grid-cols-2 lg:grid-cols-2 lg:col-span-3 gap-1 ${isMapMaximized ? 'hidden' : 'block'}`}>
               <div className="col-span-2" >
                   {/* Workforce Analytics */}
                   <WorkforceChart />
@@ -107,7 +109,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
               </div>
           </div>
       </div>
-        <ActivityFeed />
+        <ActivityFeed className={isMapMaximized ? 'hidden' : 'block'} />
 
     </div>
   );

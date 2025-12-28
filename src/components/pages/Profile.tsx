@@ -27,7 +27,7 @@ export default function HealthWorkerProfile() {
     const [linkedSystems, setLinks] = useState([])
     const [cadle, setCadle] = useState("")
     const { selectedMOHData } = useSelectedMOHData();
-    const data = selectedMOHData
+    const data = selectedMOHData;
     if (!data) return <p>No worker selected</p>;
 
     useEffect(() => {

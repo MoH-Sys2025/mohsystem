@@ -33,7 +33,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       case 'workforce':
         return <WorkforceRegistry onNavigate={setCurrentPage}  />;
         case 'deployment map':
-            return <DeploymentMap onNavigate={setCurrentPage}  />;
+            return <DeploymentMap />;
       case 'documents':
         return <Documents />;
       case 'integrations':

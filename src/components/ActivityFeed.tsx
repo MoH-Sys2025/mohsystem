@@ -1,6 +1,10 @@
 import { UserPlus, Send, FileCheck, Award } from 'lucide-react';
 
-export function ActivityFeed() {
+interface ActivityProps {
+    className?: string;
+}
+
+export function ActivityFeed({className}: ActivityProps) {
   const activities = [
     {
       type: 'deployment',
@@ -58,7 +62,7 @@ export function ActivityFeed() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-2 md:p-6">
+    <div className={`bg - white rounded-xl border border-neutral-200 p-2 md:p-6 ${className}`}>
       <div className="mb-6">
         <h2 className="text-neutral-900 mb-1">Recent Activity</h2>
         <p className="text-sm text-neutral-500">Latest system updates and actions</p>

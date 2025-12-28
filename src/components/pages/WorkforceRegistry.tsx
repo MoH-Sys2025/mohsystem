@@ -233,7 +233,7 @@ const formatInitials = (worker: any) => {
 };
 
 return (
-    <div ref={ref} className="space-y-8 p-6 px-3 border">
+    <div ref={ref} className="space-y-8 p-6 px-3">
         <div className="flex flex-col md:flex-row md:items-start lg:items-center justify-between">
             <div>
                 <h1 className="text-neutral-900 mb-2">Workforce Registry</h1>
