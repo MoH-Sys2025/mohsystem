@@ -73,9 +73,9 @@ export function DashboardHome({onNavigate}: DashboardProps) {
                   </PopoverTrigger>
 
                   <PopoverContent className="w-40 mr-2">
-                      <div className="space-y-2 flex flex-col w-full justify-start">
+                      <div className="flex flex-col w-full justify-start">
                           {createData.map((item) => (
-                              <Button key={item.page} onClick={()=>onNavigate(item.page)} variant="ghost" className="text-sm justify-start text-left h-8">{item.name}</Button>
+                              <Button key={item.page} onClick={()=>onNavigate(item.page)} variant="ghost" className="text-sm justify-start text-left h-8 font-normal">{item.name}</Button>
                           ))}
 
                       </div>
