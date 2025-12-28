@@ -28,7 +28,7 @@ import {
     Unlink,
     Trash2, User2, FileSpreadsheet, FileText, File
 } from "lucide-react";
-import {Button} from "@/components/ui/Button.tsx";
+import {Button} from "@/components/ui/button";
 import {districts} from "@/supabase/districts"
 import {
     api,
