@@ -104,13 +104,13 @@ export function DashboardHome({onNavigate}: DashboardProps) {
                   {/* Workforce Analytics */}
                   <WorkforceChart />
               </div>
-              <div className="col-span-2" >
-                  <AlertsPanel />
+              <div className="col-span-2 md:overflow-y-scroll md:max-h-90" >
+                  <ActivityFeed className={isMapMaximized ? 'hidden' : 'block'} />
+                  {/*<AlertsPanel />*/}
               </div>
           </div>
       </div>
-        <ActivityFeed className={isMapMaximized ? 'hidden' : 'block'} />
-
+        {/*<ActivityFeed className={isMapMaximized ? 'hidden' : 'block'} />*/}
     </div>
   );
 }

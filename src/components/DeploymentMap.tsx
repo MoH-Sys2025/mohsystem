@@ -5,7 +5,7 @@ import { api } from "@/supabase/Functions.tsx";
 import { districts } from "@/supabase/districts.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover.tsx";
-import {Loader2, Maximize2, Menu, Minimize2} from "lucide-react";
+import {Loader2, Maximize2, Menu, Minimize2, Settings} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { Label } from "@/components/ui/label.tsx";
 
