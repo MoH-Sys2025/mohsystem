@@ -66,14 +66,14 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
 
 
     const barcharts = [
-        <div className="md:col-span-6 lg:col-span-4 p-4 text-xs space-y-2 border shadow-sm border-neutral-200 rounded-lg">
-            <div className="font-semibold">Quick Links</div>
-            <div className="space-y-1 space-x-2 ">
-                <Button onClick={()=> onNavigate("documents")} size="xs" variant="outline" className="p-2 py-0">Documents</Button>
-                <Button onClick={()=> onNavigate("deployments")} size="xs" variant="outline" className="p-2 py-0">Deploy</Button>
-                <Button onClick={()=> onNavigate("worker profile")} size="xs" variant="outline" className="p-2 py-0">Edit Profile</Button>
-                <Button onClick={()=> onNavigate("documents")} size="xs" variant="outline" className="p-2 py-0">Message</Button>
-                <Button onClick={()=> onNavigate("form trainings")} size="xs" variant="outline" className="p-2 py-0">Assign to Trainings</Button>
+        <div className="md:col-span-6 lg:col-span-4 text-xs border shadow-sm border-neutral-200 rounded-lg p-4">
+            <div className="font-semibold text-lg">Quick Links</div>
+            <div className="flex flex-wrap flex-row gap-1 ">
+                <Button onClick={()=> onNavigate("documents")} size="xs" variant="secondary" className="p-2 py-0 font-normal bg-green-200 text-green-900">Documents</Button>
+                <Button onClick={()=> onNavigate("deployments")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Deploy</Button>
+                <Button onClick={()=> onNavigate("worker profile")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Edit Profile</Button>
+                <Button onClick={()=> onNavigate("documents")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Message</Button>
+                <Button onClick={()=> onNavigate("form trainings")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Assign to Trainings</Button>
 
             </div>
         </div>,
@@ -91,7 +91,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
                 {/* Profile Card */}
                 <Card className=" md:col-span-4 col-span-1 overflow-y-hidden m-1 rounded-lg">
                     <CardHeader>
-                        <CardTitle className="text-xl font-semibold flex flex-row gap-2 items-center">Health Worker Profile<Edit3 className="ml-auto mt-1" size={14} /></CardTitle>
+                        <CardTitle className=" font-semibold flex flex-row gap-2 items-center">Health Worker Profile<Edit3 className="ml-auto mt-1" size={14} /></CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center text-center">
@@ -123,10 +123,10 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
                                 </div>
                                 <div className="flex items-center gap-2"><BriefcaseMedical size={16} />
                                     {worker?.metadata?.worker_status.map((status, index)=>(
-                                        <Badge key={`status-${index}`} className=" bg-emerald-300 hover:bg-emerald-300 text-gray-800 font-semibold h-5 text-center"  >{status}</Badge>
+                                        <Badge key={`status-${index}`} variant="outline" className="text-[9px] text-gray-800 font-semibold h-5 text-center"  >{status}</Badge>
                                     ))}
                                 </div>
-                                <div className="flex flex-row items-center gap-2"><Mail size={16}/>{worker?.email} <LucideMailbox size={14} className="cursor-pointer text-green-500 font-semibold" /> </div>
+                                <div className="flex flex-row items-center gap-2"><Mail size={16}/>{worker?.email}</div>
                                 <div className="flex items-center gap-2"><MapPin size={16}/>{worker?.metadata?.district}, Malawi</div>
                                 <div className="flex items-center gap-2"><Briefcase size={16}/> Ministry of Health • EMT Certified</div>
                                 <div className="flex items-center gap-2"><Calendar size={16}/> Joined: {formatDate(worker?.created_at)}</div>
@@ -185,7 +185,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
                         ))}
                     </div>
                     <div className="w-full flex flex-col lg:flex-row gap-1">
-                        <div className="w-full lg:w-6/12 p-3 border-none md:p-0 rounded-lg"><DeploymentSummary imgSrc={imgSrc} worker={worker}  /></div>
+                        <div className="w-full lg:w-6/12 border-none md:p-0 rounded-lg"><DeploymentSummary imgSrc={imgSrc} worker={worker}  /></div>
                         <div className="w-full lg:w-6/12 rounded-none"><TrainingSection  /></div>
                     </div>
                 </div>

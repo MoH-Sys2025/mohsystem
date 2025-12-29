@@ -73,13 +73,13 @@ export function Competencies({competencies}: CompetenciesProps) {
    
     return (
         <div className="bg-white rounded-lg border border-neutral-200 p-4 md:h-full">
-            <h2 className="text-xs font-semibold text-neutral-900 mb-2">
+            <h2 className="font-semibold text-neutral-900 mb-2">
                 Competency Profile
             </h2>
 
             <div className="w-full gorder space-y-1 space-x-1">
                 {!competencies || competencies.length === 0 ? (
-                    <div className="text-gray-400 text-xs">No competencies are available</div>
+                    <div className="text-gray-500 italic text-sm">No competencies are available</div>
                 ) : (
                     competencies.map((comp, index) => (
                         <Button key={`comp-${index}`} size="xs" variant="outline" className="px-2 rounded-md font-normal">
