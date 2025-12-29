@@ -35,7 +35,7 @@ import {
     TableFooter,
     TableHead,
     TableHeader,
-    TableRow,} from "@/components/ui/Table.tsx";
+    TableRow,} from "@/components/ui/table";
 
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
