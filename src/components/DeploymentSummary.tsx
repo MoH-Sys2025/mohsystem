@@ -1,10 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import {Building2, Briefcase, Calendar1Icon} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {Building2, Briefcase, Calendar1Icon, DotIcon} from "lucide-react";
 import { type JSX, useEffect, useState } from "react";
 import { api } from "@/supabase/Functions.tsx";
-import {toast} from "sonner";
-import {districts} from "@/supabase/districts.tsx";
-import {Calendar} from "@/components/ui/calendar.tsx";
+import { toast } from "sonner";
+import { districts } from "@/supabase/districts.tsx";
 
 interface DeployProps {
     imgSrc: string;
@@ -12,100 +12,127 @@ interface DeployProps {
 }
 
 export default function DeploymentSummary({ imgSrc, worker }: DeployProps): JSX.Element {
-    const [deployments, set_deploy_data] = useState<any[]>([]); // initialize as empty array
+    // ✅ Always call hooks first
+    const [deployments, setDeployments] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!worker?.id) return; // guard for missing worker
+        if (!worker?.id) {
+            setDeployments([]);
+            setLoading(false);
+            return;
+        }
 
         let isMounted = true;
+
         const fetchDeployments = async () => {
             try {
                 const data = await api.listDeploymentsEq(worker.id, 10000);
-                if (isMounted) set_deploy_data(data);
-                console.log(worker, data)
+                if (isMounted) setDeployments(data);
             } catch (err) {
                 toast.error("Failed to fetch deployments:", err);
+            } finally {
+                if (isMounted) setLoading(false);
             }
         };
 
         fetchDeployments();
 
-        return () => { isMounted = false };
-    }, [worker]); // just depend on worker object
+        return () => { isMounted = false; };
+    }, [worker]);
 
+    // ✅ Conditional render only in JSX
+    if (!worker) return <div>Loading worker information...</div>;
 
     return (
-        <div className="flex flex-col gap-4 pl-4 md:pl-2">
-            <div className="ml-0 font-semibold">Deployment Summary</div>
-            <div className="border-l-1 border-gray-300 md:border-gray-300 space-y-10">
-                {deployments && deployments.length > 0 ? (
-                    deployments.map((d, index) => {
-                        const district = d.assigned_district_id
-                            ? districts.find(dist => dist.id === d.assigned_district_id)
-                            : null;
+        <Card className="shadow-none h-full">
+            <CardHeader>
+                <CardTitle>Deployment Summary</CardTitle>
+                <CardDescription>
+                    Overview of {worker.first_name} {worker.last_name}'s deployments
+                </CardDescription>
+            </CardHeader>
 
-                        return (
-                            <div key={d.id} className="pl-5 rounded-none shadow-none bg-transparent relative">
-                                <div className="w-8 h-8 rounded-full absolute -left-4 -top-1 px-2 p-1">
-                                    <img src={imgSrc} className="rounded-full w-5 h-5" alt="User" />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex flex-col justify-center gap-1 text-sm font-medium">
+            <CardContent className="space-y-4 overflow-y-auto">
+                <div className="max-h-full h-full">
+                    {loading ? (
+                        <div className="text-sm italic">Loading deployments...</div>
+                    ) : deployments.length > 0 ? (
+                        deployments.map((d, index) => {
+                            const district = d.assigned_district_id
+                                ? districts.find((dist) => dist.id === d.assigned_district_id)
+                                : null;
+
+                            return (
+                                <div key={d.id} className={`flex relative pl-2 pt-3 pb-5 ${(index < deployments.length-1) ? 'border-dashed border-b-2':''}`}>
+                                    {/* Avatar */}
+                                    <div className="absolute left-0 hidden">
+                                        <img
+                                            src={imgSrc}
+                                            alt="User"
+                                            className="rounded-full w-8 h-8 border border-gray-200"
+                                        />
+                                    </div>
+
+                                    <div className="flex-1 flex flex-col gap-1">
+                                        {/* Worker name + status */}
                                         {index === 0 && (
-                                            <div>
-                                                {worker.first_name} {worker.last_name}{" "}
-                                                <span className="ml-1 text-[10px] border px-1 rounded-sm text-green-700">
-                  {worker.metadata.worker_status[1]}
-                </span>
+                                            <div className="flex items-center gap-2 font-semibold text-sm">
+                                                {worker.first_name} {worker.last_name}
+                                                <Badge variant="secondary" className="text-[9px] px-2 py-0.5 rounded-full">
+                                                    {worker.metadata.worker_status[1]}
+                                                </Badge>
                                             </div>
                                         )}
-                                        <div className="flex flex-row items-center gap-2">
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <Building2 className="w-3 h-3 text-blue-600" />
-                                                {district?.name || "Loading district..."}
+
+                                        {/* Deployment info */}
+                                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                                            <div className="flex flex-row gap-2 md:gap-3 justify-start items-center">
+                                                <div className="flex items-center gap-1">
+                                                    <Building2 className="w-3 h-3" />
+                                                    {district?.name || "Loading district..."}
+                                                </div>
+                                                {/* Deployment dates */}
+                                                <div className="flex flex-row items-center text-xs">
+                                                    <Calendar1Icon className="w-3 h-3 mr-1" />
+                                                    {d.start_date && (
+                                                        <span className="rounded-full text-[10px]">
+                        {d.start_date}
+                      </span>
+                                                    )}
+
+                                                    {d.start_date && d.end_date && <span className=""><DotIcon /></span>}
+
+                                                    {d.end_date && (
+                                                        <span className="rounded-full text-[10px]">
+                        {d.end_date}
+                      </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <Badge
-                                                className={
-                                                    d.deploy_status === "Deployed"
-                                                        ? "bg-emerald-300 hover:bg-emerald-300 text-gray-800 text-[10px] border px-1 rounded-full"
-                                                        : "bg-gray-200 hover:bg-gray-100 text-gray-800 text-[10px] border px-1 rounded-full"
-                                                }
-                                            >
+
+                                            <Badge variant="outline" className="text-[9px] rounded-full">
                                                 {d.deploy_status === "completed" ? d.deploy_status : d.status}
                                             </Badge>
                                         </div>
-                                    </div>
 
-                                    <div className="gap-2 flex flex-col">
-                                        <div className="flex items-center gap-2 text-xs text-neutral-700">
-                                            <Briefcase className="w-3 h-3 text-neutral-500" />
-                                            {worker.role}: <span>{d.deployment_id}</span>
+                                        {/* Role & deployment ID */}
+                                        <div className="flex items-center gap-2 text-xs mt-1">
+                                            <Briefcase className="w-3 h-3" />
+                                            {worker.role}: <span className="font-medium">{d.deployment_id}</span>
                                         </div>
-                                        <div className="flex flex-row items-center gap-2 text-xs text-neutral-700">
-                                            <Calendar1Icon className="w-3 h-3 text-neutral-500" />
-                                            {d.start_date && (
-                                                <div className="text-[10px] text-gray-800 rounded-full">{d.start_date}</div>
-                                            )}
 
-                                            {d.start_date && d.end_date && <div className="text-gray-400 mx-1">---</div>}
-
-                                            {d.end_date && (
-                                                <div className="text-[10px] text-gray-800 rounded-full">{d.end_date}</div>
-                                            )}
-                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })
-                ) : (
-                    <div className="text-sm text-gray-500 italic">
-                        The user has not been deployed yet.
-                    </div>
-                )}
-
-
-            </div>
-        </div>
+                            );
+                        })
+                    ) : (
+                        <div className="text-sm italic">
+                            The user has not been deployed yet.
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     );
 }

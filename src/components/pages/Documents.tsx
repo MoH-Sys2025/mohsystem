@@ -1,7 +1,10 @@
 import { FileText, Upload, Download, Eye, MoreVertical } from 'lucide-react';
 import {Button} from "@/components/ui/button.tsx";
 
-export function Documents() {
+interface DocumentsProps {
+    onNavigate?: (page: string) => void;
+}
+export function Documents({onNavigate}: DocumentsProps) {
   const documents = [
     {
       name: 'Cholera Response Protocol 2024',

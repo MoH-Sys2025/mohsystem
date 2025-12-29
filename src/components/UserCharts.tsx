@@ -7,6 +7,8 @@ import {
     Legend,
     PolarRadiusAxis, Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid
 } from "recharts";
+import {Button} from "@/components/ui/button.tsx";
+import React from "react";
 
 export function PerfomanceBarChart() {
 
@@ -64,55 +66,27 @@ export function PerfomanceBarChart() {
     );
 }
 
-export function CompetencyRadarChart() {
-    /**
-     * Expected competencies format:
-     * [
-     *   { name: "Triage", score: 75 },
-     *   { name: "Case Mgmt", score: 60 },
-     *   { name: "IPC", score: 90 },
-     *   { name: "Leadership", score: 45 },
-     *   { name: "Data Use", score: 70 }
-     * ]
-     */
-
-    const competencies = [
-        { name: "Triage", score: 75 },
-        { name: "Case Mgmt", score: 60 },
-        { name: "IPC", score: 90 },
-        { name: "Leadership", score: 45 },
-        { name: "Data Use", score: 70 }
-    ];
-
+interface CompetenciesProps {
+    competencies: string []
+}
+export function Competencies({competencies}: CompetenciesProps) {
+   
     return (
-        <div className="bg-white rounded-lg border border-neutral-200 p-4 h-80 md:h-full">
-            <h2 className="text-xs font-semibold text-neutral-900 mb-4">
+        <div className="bg-white rounded-lg border border-neutral-200 p-4 md:h-full">
+            <h2 className="text-xs font-semibold text-neutral-900 mb-2">
                 Competency Profile
             </h2>
 
-            <div className="w-full gorder">
-                <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={competencies}>
-                        <PolarGrid stroke="#e5e7eb" />
-                        <PolarAngleAxis
-                            dataKey="name"
-                            tick={{ fill: "#6b7280", fontSize: 12 }}
-                        />
-                        <PolarRadiusAxis
-                            angle={90}
-                            domain={[0, 100]}
-                            tick={{ fill: "#9ca3af", fontSize: 11 }}
-                        />
-
-                        <Radar
-                            name="Score"
-                            dataKey="score"
-                            stroke="#10b981"
-                            fill="#10b981"
-                            fillOpacity={0.35}
-                        />
-                    </RadarChart>
-                </ResponsiveContainer>
+            <div className="w-full gorder space-y-1 space-x-1">
+                {!competencies || competencies.length === 0 ? (
+                    <div className="text-gray-400 text-xs">No competencies are available</div>
+                ) : (
+                    competencies.map((comp, index) => (
+                        <Button key={`comp-${index}`} size="xs" variant="outline" className="px-2 rounded-md font-normal">
+                            {comp}
+                        </Button>
+                    ))
+                )}
             </div>
         </div>
     );

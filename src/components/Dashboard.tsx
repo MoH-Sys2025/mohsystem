@@ -55,7 +55,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       case 'settings':
         return <Settings />;
       case 'worker profile':
-        return <HealthWorkerProfile />;
+        return <HealthWorkerProfile onNavigate={setCurrentPage} />;
         case 'form trainings':
             return <CreateTrainingWizard onCancel={()=>setCurrentPage('trainings')} onPublish={undefined} />;
       default:

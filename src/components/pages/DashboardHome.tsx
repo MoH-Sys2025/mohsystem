@@ -20,26 +20,40 @@ export function DashboardHome({onNavigate}: DashboardProps) {
     const [workforceStat, setWorkforceStat] = useState({total:0, change:0});
     const [deployments, setDeployments] = useState([])
     const [activeDeploy, setDeploymentsCount] = useState<number>(0);
+    const [deploymentStats, setDeploymentStats] = useState({ total: 0, change: 0 });
     const [activeOutbreaks, setOutbreaksCount] = useState<number>(0);
-    const [resRate, setResRate] = useState(0);
+    const [outbreakStats, setOutbreakStats] = useState({ total: 0, change: 0 });
+    const [responseRate, setResponseRate] = useState(0);
+    const [responseStats, setResponseStats] = useState({ rate: 0, change: 0 });
     const [isMapMaximized, setIsMapMaximized] = useState(false);
+
 
     useEffect(() => {
         const fetchData = async () => {
-            const [data, workfoceStatsData, data2, activeDeploy, activeOutbreaks, resRates] = await Promise.all([
+            const [data, workfoceStatsData, deploymentStatsRes, outbreakStatsData, data2, activeDeploy, activeOutbreaks, respondedOutbreaks,  responseStatsRes] = await Promise.all([
                 api.listPersonnel(10000),
                 api.getWorkforceStats(),
+                api.getDeploymentStats(),
+                api.getActiveOutbreakStats(),
                 api.listDeployments(10000),
                 api.getActiveDeployments(),
                 api.getActiveOutBreaks(),
-                api.getOutbreakInfo()
+                api.getOutbreakInfo(),
+                api.getResponseStats()
             ])
             setWorkforce(data)
             setWorkforceStat(workfoceStatsData)
+            setDeploymentStats(deploymentStatsRes);
             setOutbreaksCount(activeOutbreaks)
             setDeploymentsCount(activeDeploy)
+            setOutbreakStats(outbreakStatsData);
             setDeployments(data2)
-            setResRate(resRates.length)
+            setResponseStats(responseStatsRes);
+            setResponseRate(outbreakStatsData.total === 0
+                ? 0
+                : Math.round(
+                    (respondedOutbreaks.length / outbreakStatsData.total) * 100
+                ));
         };
 
         fetchData();
@@ -55,24 +69,24 @@ export function DashboardHome({onNavigate}: DashboardProps) {
 
     const starts = [
         {title:"Total Health workers", icon: Users, change: workforceStat.total-workforceStat.change, value: workforce.length},
-        {title:"Active Deployments", icon: UserCheck, change: 3, value: activeDeploy},
-        {title:"Active Outbreaks", icon: AlertTriangle, change: -10, value: activeOutbreaks},
-        {title:"Response Rate", icon: TrendingUp, change: -2, value: resRate},
+        {title:"Active Deployments", icon: UserCheck, change: deploymentStats.change, value: activeDeploy },
+        {title:"Active Outbreaks", icon: AlertTriangle, change: outbreakStats.change, value: outbreakStats.total},
+        {title:"Response Rate", icon: TrendingUp, change: `${responseStats.rate}%`, value: `${responseRate}%`},
     ]
   return (
     <div className="space-y-1 p-6 px-1 md:p-4">
       {/* Header */}
-      <div className="flex flex-row justify-between items-start mb-4">
+      <div className="flex md:flex-row flex-col gap-2 justify-between items-start mb-4">
         <div>
             <h1 className="text-neutral-900 mb-2">Dashboard Overview</h1>
             <p className="text-neutral-500">Monitor healthcare workforce and outbreak response across Malawi</p>
         </div>
               <Popover>
                   <PopoverTrigger asChild>
-                      <Button className="text-sm cursor-pointer bg-gray-100 border-2 hover:bg-gray-200 px-3 border-dashed rounded-lg text-black">Create <MoreVertical /></Button>
+                      <Button className="text-sm md:w-auto flex flex-row justify-between cursor-pointer bg-gray-100 border-2 hover:bg-gray-200 border-dashed rounded-lg text-black">Create <MoreVertical /></Button>
                   </PopoverTrigger>
 
-                  <PopoverContent className="w-40 mr-2">
+                  <PopoverContent align="end" className="w-full">
                       <div className="flex flex-col w-full justify-start">
                           {createData.map((item) => (
                               <Button key={item.page} onClick={()=>onNavigate(item.page)} variant="ghost" className="text-sm justify-start text-left h-8 font-normal">{item.name}</Button>

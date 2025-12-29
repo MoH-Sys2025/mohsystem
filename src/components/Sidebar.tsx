@@ -9,6 +9,7 @@ import {
     Settings,
     LogOut, Bell
 } from 'lucide-react';
+import {Button} from "@/components/ui/button.tsx";
 
 interface SidebarProps {
     currentPage: string;
@@ -18,14 +19,14 @@ interface SidebarProps {
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
     const navItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'workforce', label: 'Workforce Registry', icon: Users },
-        { id: 'documents', label: 'Documents', icon: FileText },
-        { id: 'integrations', label: 'Integrations', icon: Boxes },
-        { id: 'deployments', label: 'Deployments', icon: Send },
-        { id: 'trainings', label: 'Trainings', icon: GraduationCap },
-        { id: 'competency', label: 'Competency Tracking', icon: Award },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, disabled: false},
+        { id: 'workforce', label: 'Workforce Registry', icon: Users, disabled: false },
+        { id: 'documents', label: 'Documents', icon: FileText, disabled: false },
+        { id: 'integrations', label: 'Integrations', icon: Boxes, disabled: true },
+        { id: 'deployments', label: 'Deployments', icon: Send, disabled: false },
+        { id: 'trainings', label: 'Trainings', icon: GraduationCap, disabled: false },
+        { id: 'competency', label: 'Competency Tracking', icon: Award, disabled: true },
+        { id: 'notifications', label: 'Notifications', icon: Bell, disabled: false },
     ];
 
     return (
@@ -37,7 +38,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
       "
         >
             {/* Logo */}
-            <div className="p-2 border-b border-neutral-200 flex items-center gap-3">
+            <div className="p-2 border-b border-neutral-200 flex justify-center lg:justify-start lg:ml-2 items-center gap-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center">
                     <img src="/logo.png" alt="logo" />
                 </div>
@@ -56,20 +57,22 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
                         const Icon = item.icon;
                         const isActive = currentPage === item.id;
                         return (
-                            <button
+                            <Button
                                 key={item.id}
+                                variant="ghost"
+                                disabled={item.disabled}
                                 onClick={() => onNavigate(item.id)}
                                 className={`
-                  w-full flex items-center px-3 py-2 rounded-md transition-colors
+                  w-full flex flex-row justify-start items-center px-3 py-2 rounded-md transition-colors
                   ${isActive ? 'bg-neutral-100 text-neutral-900'
-                                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'}
+                                    : 'text-neutral-600 '}
                 `}
                             >
                                 <Icon className="w-5 h-5" />
 
                                 {/* LABEL SHOWN ONLY ON lg+ */}
                                 <span className="hidden lg:inline ml-3">{item.label}</span>
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>

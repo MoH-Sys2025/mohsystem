@@ -11,7 +11,7 @@ import {
     Edit3, BriefcaseMedical, LinkIcon, Unlink
 } from "lucide-react";
 import DeploymentSummary from "@/components/DeploymentSummary.tsx";
-import {PerfomanceBarChart, CompetencyRadarChart} from "@/components/UserCharts.tsx";
+import {PerfomanceBarChart, Competencies} from "@/components/UserCharts.tsx";
 import {TrainingSection} from "@/components/Trainings.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {api, formatDate, getAge} from "@/supabase/Functions.tsx";
@@ -19,7 +19,10 @@ import React from "react";
 import {Badge} from "@/components/ui/badge.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 
-export default function HealthWorkerProfile() {
+interface HCWProfileProps {
+    onNavigate?: () => void;
+}
+export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
 
     const [worker, setWorker] = useState(null);
     const [age, setAge] = useState(0)
@@ -61,27 +64,24 @@ export default function HealthWorkerProfile() {
         return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
     };
 
+
     const barcharts = [
-        <div className="md:col-span-6 lg:col-span-3 p-4 text-xs space-y-2 border shadow-sm border-neutral-200 rounded-lg">
+        <div className="md:col-span-6 lg:col-span-4 p-4 text-xs space-y-2 border shadow-sm border-neutral-200 rounded-lg">
             <div className="font-semibold">Quick Links</div>
             <div className="space-y-1 space-x-2 ">
-                <Button size="xs" variant="outline" className="p-2 py-0">Documents</Button>
-                <Button size="xs" variant="outline" className="p-2 py-0">Deploy</Button>
-                <Button size="xs" variant="outline" className="p-2 py-0">Links</Button>
-                <Button size="xs" variant="outline" className="p-2 py-0">Edit Profile</Button>
-                <Button size="xs" variant="outline" className="p-2 py-0">Message</Button>
-                <Button size="xs" variant="outline" className="p-2 py-0">Assign to Trainings</Button>
+                <Button onClick={()=> onNavigate("documents")} size="xs" variant="outline" className="p-2 py-0">Documents</Button>
+                <Button onClick={()=> onNavigate("deployments")} size="xs" variant="outline" className="p-2 py-0">Deploy</Button>
+                <Button onClick={()=> onNavigate("worker profile")} size="xs" variant="outline" className="p-2 py-0">Edit Profile</Button>
+                <Button onClick={()=> onNavigate("documents")} size="xs" variant="outline" className="p-2 py-0">Message</Button>
+                <Button onClick={()=> onNavigate("form trainings")} size="xs" variant="outline" className="p-2 py-0">Assign to Trainings</Button>
 
             </div>
         </div>,
-        <div className="md:col-span-6 lg:col-span-3">
-            <PerfomanceBarChart />
-        </div>,
-        <div className="md:col-span-6 lg:col-span-3">
-            <CompetencyRadarChart />
-        </div>,
-        <div className="md:col-span-6 lg:col-span-3 flex-auto">
-            <PerfomanceBarChart />
+        // <div className="md:col-span-4 lg:col-span-4">
+        //     <PerfomanceBarChart />
+        // </div>,
+        <div className="md:col-span-6 lg:col-span-8">
+            <Competencies competencies={worker?.metadata?.competencies} />
         </div>
     ]
     const imgSrc = (capitalize(worker?.gender) === 'Female') ? "portrait_Nurse.jpg":"male_nurse.png"
@@ -161,10 +161,10 @@ export default function HealthWorkerProfile() {
                                         <div className="text-gray-400">No competencies are available</div>
                                     ) : (
                                         worker.metadata.competencies.map((comp, index) => (
-                                            <li key={`comp-${index}`} className="py-1 w-full">
-                                                <div className="bg-gray-200 px-3 py-1 rounded-full">
+                                            <li key={`comp-${index}`} className="py-0.5 w-full">
+                                                <Button variant="outline" className="px-3 py-1 rounded-full">
                                                     {comp}
-                                                </div>
+                                                </Button>
                                             </li>
                                         ))
                                     )}
@@ -185,7 +185,7 @@ export default function HealthWorkerProfile() {
                         ))}
                     </div>
                     <div className="w-full flex flex-col lg:flex-row gap-1">
-                        <Card className="w-full lg:w-6/12 p-3 md:p-6 rounded-lg"><DeploymentSummary imgSrc={imgSrc} worker={worker}  /></Card>
+                        <div className="w-full lg:w-6/12 p-3 border-none md:p-0 rounded-lg"><DeploymentSummary imgSrc={imgSrc} worker={worker}  /></div>
                         <div className="w-full lg:w-6/12 rounded-none"><TrainingSection  /></div>
                     </div>
                 </div>

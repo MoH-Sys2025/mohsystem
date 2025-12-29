@@ -139,18 +139,18 @@ export const api = {
         }
     },
     async getOutbreakInfo() {
-        // 1. Fetch deployments
+        // 1️⃣ Fetch ACTIVE deployments only
         const { data: deploymentsData, error: deploymentsError } = await supabase
             .from("deployments")
-            .select("*")
-            .order("deployment_id");
+            .select("deployment_id, outbreak_id")
+            .eq("deploy_status", "active");
 
         if (deploymentsError) {
             toast.error("Error fetching deployments data");
             return [];
         }
 
-        // 2. Remove duplicates by deployment_id
+        // 2️⃣ Remove duplicates by deployment_id
         const seen = new Set();
         const uniqueDeployments = [];
 
@@ -161,13 +161,16 @@ export const api = {
             }
         });
 
-        // 3. Extract unique outbreak_ids
+        // 3️⃣ Unique outbreak IDs
         const outbreakIds = uniqueDeployments.map(d => d.outbreak_id);
 
-        // 4. Fetch outbreaks (rename variables here)
+        if (outbreakIds.length === 0) return [];
+
+        // 4️⃣ Fetch ACTIVE outbreaks only
         const { data: outbreaksData, error: outbreaksError } = await supabase
             .from("outbreaks")
             .select("id, disease, district")
+            .eq("status", "active")
             .in("id", outbreakIds);
 
         if (outbreaksError) {
@@ -175,9 +178,9 @@ export const api = {
             return [];
         }
 
-        // 5. Return outbreaks data
         return outbreaksData;
-    },
+    }
+    ,
     async getDeploymentCounts() {
         // 1. get ONLY active rows
         const { data, error } = await supabase
@@ -201,7 +204,6 @@ export const api = {
         // 3. return only the values (counts)
         return Object.values(counts);
     },
-
     async getActiveDeployments() {
         const { data, error } = await supabase
             .from("deployments")
@@ -234,6 +236,67 @@ export const api = {
         });
         return counts;
     },
+    async getResponseStats() {
+        // -----------------------------
+        // 🕒 UTC month boundary
+        // -----------------------------
+        const now = new Date();
+        const startOfCurrentMonth = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+        );
+
+        // ---------- CURRENT ----------
+        const { data: activeOutbreaks } = await supabase
+            .from("outbreaks")
+            .select("id")
+            .eq("status", "active");
+
+        const currentTotal = activeOutbreaks?.length ?? 0;
+
+        const { data: currentDeployments } = await supabase
+            .from("deployments")
+            .select("outbreak_id")
+            .eq("deploy_status", "active");
+
+        const currentResponded = new Set(
+            currentDeployments?.map(d => d.outbreak_id)
+        ).size;
+
+        const currentRate =
+            currentTotal === 0
+                ? 0
+                : Math.round((currentResponded / currentTotal) * 100);
+
+        // ---------- PREVIOUS ----------
+        const { data: prevOutbreaks } = await supabase
+            .from("outbreaks")
+            .select("id")
+            .eq("status", "active")
+            .lt("created_at", startOfCurrentMonth.toISOString());
+
+        const prevTotal = prevOutbreaks?.length ?? 0;
+
+        const { data: prevDeployments } = await supabase
+            .from("deployments")
+            .select("outbreak_id")
+            .eq("deploy_status", "active")
+            .lt("created_at", startOfCurrentMonth.toISOString());
+
+        const prevResponded = new Set(
+            prevDeployments?.map(d => d.outbreak_id)
+        ).size;
+
+        const previousRate =
+            prevTotal === 0
+                ? 0
+                : Math.round((prevResponded / prevTotal) * 100);
+
+        return {
+            rate: currentRate,
+            change: currentRate - previousRate
+        };
+    },
+
     async getDeployedDistricts() {
         const { data, error } = await supabase
             .from("deployments")
@@ -332,7 +395,7 @@ export const api = {
         if (error) toast.error("Error fetching cadres");
         return data;
     },
-    async listFacilities(limit = 100) {
+    async listFacilities(limit = 10000) {
         const { data, error } = await supabase
             .from("health_facilities")
             .select("*")
@@ -343,7 +406,7 @@ export const api = {
         return data;
     },
 
-    async listDeployments(limit = 2000000) {
+    async listDeployments(limit = 10000) {
         const { data, error } = await supabase
             .from("deployments")
             .select("*")
@@ -444,9 +507,85 @@ export const api = {
             total: total,
             change: total - previous,
         };
+    },
+    async getDeploymentStats() {
+        // -----------------------------
+        // 🕒 UTC month boundary
+        // -----------------------------
+        const now = new Date();
+        const startOfCurrentMonth = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+        );
+
+        // ------------------------------------
+        // Active + Deployed BEFORE this month
+        // ------------------------------------
+        const { count: previousCount, error: prevError } = await supabase
+            .from("deployments")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "Deployed")
+            .eq("deploy_status", "active")
+            .lt("created_at", startOfCurrentMonth.toISOString());
+
+        if (prevError) throw prevError;
+
+        // ------------------------------------
+        // Active + Deployed UP TO now
+        // ------------------------------------
+        const { count: currentCount, error: currError } = await supabase
+            .from("deployments")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "Deployed")
+            .eq("deploy_status", "active");
+
+        if (currError) throw currError;
+
+        const total = currentCount ?? 0;
+        const previous = previousCount ?? 0;
+
+        return {
+            total,
+            change: total - previous,
+        };
+    },
+    async getActiveOutbreakStats() {
+        // -----------------------------
+        // 🕒 UTC month boundary
+        // -----------------------------
+        const now = new Date();
+        const startOfCurrentMonth = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+        );
+
+        // ------------------------------------
+        // Active outbreaks BEFORE this month
+        // ------------------------------------
+        const { count: previousCount, error: prevError } = await supabase
+            .from("outbreaks")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "active")
+            .lt("date_started", startOfCurrentMonth.toISOString());
+
+        if (prevError) throw prevError;
+
+        // ------------------------------------
+        // Active outbreaks STARTED this month or earlier
+        // ------------------------------------
+        const { count: currentCount, error: currError } = await supabase
+            .from("outbreaks")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "active");
+
+        if (currError) throw currError;
+
+        const total = currentCount ?? 0;
+        const previous = previousCount ?? 0;
+
+        return {
+            total,
+            change: total - previous,
+        };
     }
-
-
 }
 
 export function getAge(dob: string) {
