@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import { ArrowRight, ArrowLeft, Download } from "lucide-react";
+import {ArrowRight, ArrowLeft, Download, Trash2, Search, Users, UserCheck2} from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { competencyList } from "@/supabase/competencieslist";
-import { api } from "@/supabase/Functions.tsx";
+import {api, useElementSize} from "@/supabase/Functions.tsx";
 import { toast } from "sonner";
 import { supabase } from "@/supabase/supabase.ts";
+
 import {
     Command,
     CommandEmpty,
@@ -16,13 +17,36 @@ import {
     CommandInput,
     CommandItem,
 } from "@/components/ui/command";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from "@/components/ui/alert-dialog.tsx";
+import {Input} from "@/components/ui/input.tsx";
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableFooter,
+    TableHead,
+    TableHeader,
+    TableRow,} from "@/components/ui/Table.tsx";
 
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
+    const [opendeleteDialog, setOpenDeleteDialog] = useState(false);
     const [personnels, setPersonnels] = useState([]);
     const [uploaded, setUploaded] = useState(false);
     const [step, setStep] = useState(1);
     const [competencies, setCompetencies] = useState({});
+
+    const { ref, size } = useElementSize<HTMLDivElement>();
+    const contentWidth = size.width - size.paddingLeft - size.paddingRight;
 
     const [districts, setDistricts] = useState([]);
     const [facilities, setFacilities] = useState([]);
@@ -33,6 +57,35 @@ export default function ExcelUploader() {
     // search + filters
     const [searchTerm, setSearchTerm] = useState("");
     const [columnFilters, setColumnFilters] = useState({});
+    const [selectedRows, setSelectedRows] = useState<number[]>([]);
+
+    const toggleRowSelection = (rowIndex: number) => {
+        setSelectedRows((prev) =>
+            prev.includes(rowIndex)
+                ? prev.filter((i) => i !== rowIndex)
+                : [...prev, rowIndex]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedRows.length === filteredRows.length) {
+            setSelectedRows([]);
+        } else {
+            const indexes = filteredRows.map((_, i) => rows.indexOf(filteredRows[i]));
+            setSelectedRows(indexes);
+        }
+    };
+
+    const deleteSelectedRows = () => {
+        if (selectedRows.length === 0) {
+            toast.error("No rows selected");
+            return;
+        }
+
+        setRows((prev) => prev.filter((_, i) => !selectedRows.includes(i)));
+        setSelectedRows([]);
+        toast.success(`${selectedRows[selectedRows.length-1]} Selected rows deleted`);
+    };
 
     // ------------------------------------------------------------
     // LOAD LOOKUPS
@@ -128,7 +181,7 @@ export default function ExcelUploader() {
                 };
             });
 
-            // Insert into personnel table
+            // Insert into personnel Table
             const { error } = await supabase
                 .from("personnel")
                 .insert(payload);
@@ -194,7 +247,7 @@ export default function ExcelUploader() {
                         const key = (h || "").toString().trim();
                         if (!key) return;
                         if (key === "phone") {
-                            obj[key] = row[i] ? "+265" + row[i] : "";
+                            obj[key] = row[i] ? row[i] : "";
                         } else {
                             obj[key] = row[i] ?? "";
                         }
@@ -289,24 +342,18 @@ export default function ExcelUploader() {
     // RENDER
     // ------------------------------------------------------------
     return (
-        <div className="p-6">
+        <div ref={ref}  className="p-2">
             {step === 1 && (
                 <div>
-                    <div
-                        className={`transition-all duration-500 ${uploaded ? "flex justify-start" : "flex justify-center items-center h-[60vh]"}`}
-                    >
+                    <div className={`transition-all duration-500 ${uploaded ? "flex justify-start" : "flex justify-center items-center h-[60vh]"}`}>
                         <div className="p-2 flex flex-row gap-2 items-center justify-center">
-
                             {/* Upload Button */}
                             <Button
                                 asChild
                                 variant="secondary"
                                 className="border-2 border-dashed border-gray-400"
-                                size="sm"
-                            >
-                                <label htmlFor="excel-file" className="cursor-pointer">
-                                    Choose Excel File
-                                </label>
+                                size="sm">
+                                <label htmlFor="excel-file" className="cursor-pointer">Choose Excel File</label>
                             </Button>
 
                             {/* Download Template */}
@@ -317,7 +364,7 @@ export default function ExcelUploader() {
                                 </a>
                             </Button>
 
-                            <input
+                            <Input
                                 id="excel-file"
                                 type="file"
                                 accept=".xlsx,.xls"
@@ -329,110 +376,143 @@ export default function ExcelUploader() {
 
                     {uploaded && (
                         <div>
-                            <div className="mt-6 overflow-auto border rounded-md">
+                            <div className="mt-6 border rounded-md">
                                 {/* Search Input */}
-                                <div className="flex items-center border rounded-md px-2 bg-white">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-4 w-4 text-gray-500"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1116.65 6.65a7.5 7.5 0 010 10.6z"
-                                        />
-                                    </svg>
-                                    <input
+                                <div className="flex items-center rounded-md px-2 gap-1 rounded-b-none bg-gray-200 pl-3 p-1">
+                                    <Search size={18} className="font-extrabold text-xl text-gray-600" />
+                                    <Input
                                         type="text"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        placeholder="Search..."
-                                        className="outline-none text-sm ml-2 py-1"
+                                        placeholder="Search: Firstname, Lastname"
+                                        className="outline-none text-sm ml-2 py-4 font-semibold bg-white"
                                     />
+                                    <div className="flex items-center gap-1 justify-start">
+                                        <Button size="sm" variant="outline" className="text-sm flex flex-row items-center gap-1 p-2 text-gray-500 font-semibold">
+                                            <Users size={15} />{rows.length}
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="flex flex-row items-center gap-1 text-sm p-2 text-gray-500 font-semibold">
+                                            <UserCheck2 size={15} /> {selectedRows.length}
+                                            <Button
+                                                aria-disabled={(selectedRows.length === 0)? true : false}
+                                                size="xs" className={`w - 6 h-6 rounded-sm`}
+                                                variant="outline"
+                                                onClick={()=> setOpenDeleteDialog(true)}
+                                                disabled={selectedRows.length === 0}
+                                            >
+                                                <Trash2 size="xs" className={(selectedRows.length === 0) ? 'text-gray-500':'text-red-600'} />
+                                            </Button>
+                                        </Button>
+                                    </div>
                                 </div>
                                 {rows.length === 0 ? (
                                     <div className="p-4 text-sm text-gray-600">No rows found in the uploaded file.</div>
                                 ) : (
-                                    <table className="w-full text-xs">
-                                        <thead className="bg-gray-100">
-                                        <tr>
-                                            {Object.keys(rows[0] || {}).map((col) => (
-                                                <th key={col} className="border p-2 text-left relative">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="capitalize">{col}</span>
+                                    <div className="overflow-x-auto">
+                                        <div className={`overflow-x-scroll`} style={{maxWidth: size.width-20, width: contentWidth || undefined }}>
+                                            <Table className="w-full text-xs">
+                                                <TableCaption className="py-2 pb-4">Uploaded personnel (Step 1)</TableCaption>
 
-                                                        {/* Filter chevron */}
-                                                        <Popover>
-                                                            <PopoverTrigger asChild>
-                                                                <button className="text-gray-500 hover:text-black hidden text-xs ml-2">
-                                                                    ▼
-                                                                </button>
-                                                            </PopoverTrigger>
+                                                <TableHeader className="bg-gray-100">
+                                                    <TableRow>
+                                                        <TableHead className="border w-10 flex flex-row items-center justify-center">
+                                                            <Checkbox
+                                                                className="not-checked:border-gray-400 not-checked:border-2 checked:border-gray-400 checked:border-2"
+                                                                checked={
+                                                                    filteredRows.length > 0 &&
+                                                                    selectedRows.length === filteredRows.length
+                                                                }
+                                                                onCheckedChange={toggleSelectAll}
+                                                            />
+                                                        </TableHead>
+                                                        {Object.keys(rows[0] || {}).map((col) => (
+                                                            <TableHead key={col} className="border p-2 text-left relative">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="capitalize">{col}</span>
 
-                                                            <PopoverContent className="w-48 p-2 text-sm">
-                                                                <p className="font-semibold mb-1">{col} Filter</p>
-                                                                <input
-                                                                    type="text"
-                                                                    className="border rounded px-2 py-1 w-full text-xs"
-                                                                    placeholder={`Filter ${col}`}
-                                                                    value={columnFilters[col] || ""}
-                                                                    onChange={(e) => {
-                                                                        const val = e.target.value;
-                                                                        setColumnFilters((prev) => ({
-                                                                            ...prev,
-                                                                            [col]: val,
-                                                                        }));
-                                                                    }}
-                                                                />
-                                                                <div className="flex gap-2 mt-2">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        onClick={() => {
-                                                                            // clear this column filter
-                                                                            setColumnFilters((prev) => {
-                                                                                const copy = { ...prev };
-                                                                                delete copy[col];
-                                                                                return copy;
-                                                                            });
-                                                                        }}
-                                                                    >
-                                                                        Clear
-                                                                    </Button>
+                                                                    {/* Filter chevron */}
+                                                                    <Popover>
+                                                                        <PopoverTrigger asChild>
+                                                                            <Button className="text-gray-500 hover:text-black hidden text-xs ml-2">
+                                                                                ▼
+                                                                            </Button>
+                                                                        </PopoverTrigger>
 
-                                                                    <Button
-                                                                        size="sm"
-                                                                        onClick={() => {
-                                                                            // close popover by doing nothing (popover will close automatically on outside click)
-                                                                        }}
-                                                                    >
-                                                                        OK
-                                                                    </Button>
+                                                                        <PopoverContent className="w-48 p-2 text-sm">
+                                                                            <p className="font-semibold mb-1">{col} Filter</p>
+                                                                            <input
+                                                                                type="text"
+                                                                                className="border rounded px-2 py-1 w-full text-xs"
+                                                                                placeholder={`Filter ${col}`}
+                                                                                value={columnFilters[col] || ""}
+                                                                                onChange={(e) => {
+                                                                                    const val = e.target.value;
+                                                                                    setColumnFilters((prev) => ({
+                                                                                        ...prev,
+                                                                                        [col]: val,
+                                                                                    }));
+                                                                                }}
+                                                                            />
+                                                                            <div className="flex gap-2 mt-2">
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    onClick={() => {
+                                                                                        // clear this column filter
+                                                                                        setColumnFilters((prev) => {
+                                                                                            const copy = { ...prev };
+                                                                                            delete copy[col];
+                                                                                            return copy;
+                                                                                        });
+                                                                                    }}
+                                                                                >
+                                                                                    Clear
+                                                                                </Button>
+
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    onClick={() => {
+                                                                                        // close popover by doing nothing (popover will close automatically on outside click)
+                                                                                    }}
+                                                                                >
+                                                                                    OK
+                                                                                </Button>
+                                                                            </div>
+                                                                        </PopoverContent>
+                                                                    </Popover>
                                                                 </div>
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                    </div>
-                                                </th>
-                                            ))}
-                                        </tr>
-                                        </thead>
+                                                            </TableHead>
+                                                        ))}
+                                                    </TableRow>
+                                                </TableHeader>
 
-                                        <tbody>
-                                        {filteredRows.map((r, idx) => (
-                                            <tr key={idx} className="odd:bg-gray-50">
-                                                {Object.keys(r).map((key) => (
-                                                    <td key={key} className="border p-2">
-                                                        {r[key]}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
+                                                <TableBody>
+                                                {filteredRows.map((r, idx) => {
+                                                    const originalIndex = rows.indexOf(r);
+
+                                                    return (
+                                                        <TableRow key={originalIndex} className="odd:bg-gray-50">
+                                                            <TableCell className="">
+                                                                <Checkbox
+                                                                    checked={selectedRows.includes(originalIndex)}
+                                                                    onCheckedChange={() => toggleRowSelection(originalIndex)}
+                                                                    className="not-checked:border-gray-400 not-checked:border-2 checked:border-gray-400 checked:border-2"
+                                                                />
+                                                            </TableCell>
+
+                                                            {Object.keys(r).map((key) => (
+                                                                <TableCell key={key} className="border p-2">
+                                                                    {r[key]}
+                                                                </TableCell>
+                                                            ))}
+                                                        </TableRow>
+                                                    );
+                                                })}
+
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
@@ -451,41 +531,42 @@ export default function ExcelUploader() {
 
             {step === 2 && (
                 <div className="mt-4">
-                    <h2 className="text-lg font-semibold mb-4">Assign Competencies</h2>
+                    <h2 className="text-lg font-semibold mb-4">Assign Facilities, Competencies and trainings</h2>
 
-                    <div className="w-full overflow-x-auto overflow-y-auto">
-                        <div className="border rounded-md overflow-hidden">
-                            <div className="max-h-[60vh] overflow-y-auto">
-                                <table className="min-w-full text-sm table-auto">
-                                    <thead className="bg-gray-100 sticky top-0 z-10">
-                                    <tr>
-                                        <th className="border p-2 w-50">Full Name</th>
-                                        <th className="border p-2 w-80">Position</th>
-                                        <th className="border p-2">Facility</th>
-                                        <th className="border p-2">Competencies</th>
-                                    </tr>
-                                    </thead>
+                    <div className="overflow-y-auto">
+                        <div className="border rounded-md overflow-hidden overflow-x-auto">
+                            <div className={`overflow-x-scroll`} style={{maxWidth: size.width-20, width: contentWidth || undefined }}>
+                                <Table className="w-full">
+                                    <TableCaption className="py-2 pb-4">Uploaded personnel (Step 2)</TableCaption>
+                                    <TableHeader className="sticky top-0">
+                                       <TableRow className="bg-gray-100 top-0 z-10">
+                                           <TableHead className="border p-2 w-50">Full Name</TableHead>
+                                           <TableHead className="border p-2 w-80">Position</TableHead>
+                                           <TableHead className="border p-2">Facility</TableHead>
+                                           <TableHead className="border p-2">Competencies</TableHead>
+                                       </TableRow>
+                                   </TableHeader>
 
-                                    <tbody>
-                                    {rows.map((person, index) => {
+                                    <TableBody>
+                                        {rows.map((person, index) => {
                                         const values = Object.values(person);
                                         const firstName = values[0] || "";
                                         const lastName = values[1] || "";
                                         const position = values[7] || "";
 
                                         return (
-                                            <tr key={index} className="odd:bg-gray-50">
-                                                <td className="border p-2">
+                                            <TableRow key={index} className="odd:bg-gray-50">
+                                                <TableCell className="border p-2">
                                                     {`${firstName} ${lastName}`.trim()}
-                                                </td>
+                                                </TableCell>
 
-                                                <td className="border p-2">{position || "N/A"}</td>
+                                                <TableCell className="border p-2">{position || "N/A"}</TableCell>
 
-                                                <td className="border p-2">
+                                                <TableCell className="border p-2">
                                                     <FacilitySelector index={index} />
-                                                </td>
+                                                </TableCell>
 
-                                                <td className="border p-2">
+                                                <TableCell className="border p-2">
                                                     <div className="flex flex-wrap gap-2 mb-2">
                                                         {(competencies[index] || []).map((c, i) => (
                                                             <Badge key={i} variant="secondary">
@@ -513,6 +594,7 @@ export default function ExcelUploader() {
                                                                             {items.map((comp) => (
                                                                                 <label key={comp} className="flex items-center gap-2 text-sm ml-2 mb-1">
                                                                                     <Checkbox
+                                                                                        className="not-checked:border-gray-400 not-checked:border-2 checked:border-gray-400 checked:border-2"
                                                                                         checked={(competencies[index] || []).includes(comp)}
                                                                                         onCheckedChange={() => toggleCompetency(index, comp)}
                                                                                     />
@@ -540,6 +622,7 @@ export default function ExcelUploader() {
                                                                                 {diseaseComps.map((comp) => (
                                                                                     <label key={comp} className="flex items-center gap-2 text-sm ml-3 mb-1">
                                                                                         <Checkbox
+                                                                                            className="not-checked:border-gray-400 not-checked:border-2 checked:border-gray-400 checked:border-2"
                                                                                             checked={(competencies[index] || []).includes(comp)}
                                                                                             onCheckedChange={() => toggleCompetency(index, comp)}
                                                                                         />
@@ -555,12 +638,18 @@ export default function ExcelUploader() {
                                                             })}
                                                         </PopoverContent>
                                                     </Popover>
-                                                </td>
-                                            </tr>
+                                                </TableCell>
+                                            </TableRow>
                                         );
                                     })}
-                                    </tbody>
-                                </table>
+                                    </TableBody>
+                                    <TableFooter className="bg-gray-200">
+                                        <TableRow>
+                                            <TableCell colSpan={3}>Total</TableCell>
+                                            <TableCell className="text-left pl-4">{rows.length}</TableCell>
+                                        </TableRow>
+                                    </TableFooter>
+                                </Table>
                             </div>
                         </div>
                     </div>
@@ -576,6 +665,20 @@ export default function ExcelUploader() {
                     </div>
                 </div>
             )}
+            <AlertDialog  open={opendeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to Delete ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Deleting a healthcare worker will remove them from the system and might affect deployments history.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={()=> setOpenDeleteDialog(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={()=> {deleteSelectedRows(); setOpenDeleteDialog(false)}}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

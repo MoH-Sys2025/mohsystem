@@ -193,7 +193,7 @@ export default function ExcelUploader() {
                         const key = (h || "").toString().trim();
                         if (!key) return;
                         if (key === "phone") {
-                            obj[key] = row[i] ? "+265" + row[i] : "";
+                            obj[key] = row[i] ? row[i] : "";
                         } else {
                             obj[key] = row[i] ?? "";
                         }

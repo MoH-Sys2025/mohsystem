@@ -236,66 +236,6 @@ export const api = {
         });
         return counts;
     },
-    async getResponseStats() {
-        // -----------------------------
-        // 🕒 UTC month boundary
-        // -----------------------------
-        const now = new Date();
-        const startOfCurrentMonth = new Date(
-            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
-        );
-
-        // ---------- CURRENT ----------
-        const { data: activeOutbreaks } = await supabase
-            .from("outbreaks")
-            .select("id")
-            .eq("status", "active");
-
-        const currentTotal = activeOutbreaks?.length ?? 0;
-
-        const { data: currentDeployments } = await supabase
-            .from("deployments")
-            .select("outbreak_id")
-            .eq("deploy_status", "active");
-
-        const currentResponded = new Set(
-            currentDeployments?.map(d => d.outbreak_id)
-        ).size;
-
-        const currentRate =
-            currentTotal === 0
-                ? 0
-                : Math.round((currentResponded / currentTotal) * 100);
-
-        // ---------- PREVIOUS ----------
-        const { data: prevOutbreaks } = await supabase
-            .from("outbreaks")
-            .select("id")
-            .eq("status", "active")
-            .lt("created_at", startOfCurrentMonth.toISOString());
-
-        const prevTotal = prevOutbreaks?.length ?? 0;
-
-        const { data: prevDeployments } = await supabase
-            .from("deployments")
-            .select("outbreak_id")
-            .eq("deploy_status", "active")
-            .lt("created_at", startOfCurrentMonth.toISOString());
-
-        const prevResponded = new Set(
-            prevDeployments?.map(d => d.outbreak_id)
-        ).size;
-
-        const previousRate =
-            prevTotal === 0
-                ? 0
-                : Math.round((prevResponded / prevTotal) * 100);
-
-        return {
-            rate: currentRate,
-            change: currentRate - previousRate
-        };
-    },
 
     async getDeployedDistricts() {
         const { data, error } = await supabase
@@ -325,6 +265,7 @@ export const api = {
             .from("personnel")
             .select("*")
             .eq("id", id)
+            .eq("system_status", "registered") // <-- filter only registered
             .single();
 
         if (error) toast.error("There was an error while getting Health workers data");
@@ -351,10 +292,25 @@ export const api = {
         return true;
     },
 
+    async deleteHCW(id: string) {
+        const { error } = await supabase
+            .from("personnel")
+            .update({ system_status: "deleted" }) // mark as deleted
+            .eq("id", id);
+
+        if (error) {
+            toast.error("Error deleting Healthcare worker");
+            return false;
+        }
+
+        return true;
+    },
+
     async listPersonnel(limit = 100) {
         const { data, error } = await supabase
             .from("personnel")
             .select("*")
+            .eq("system_status", "registered") // <-- filter only registered
             .order("personnel_identifier", { ascending: true })
             .limit(limit);
 
@@ -362,10 +318,11 @@ export const api = {
         return data;
     },
 
-    async  listPersonnelMetaWorker(limit = 100) {
+    async  listPersonnelMetaWorker(limit = 1000) {
         const { data, error } = await supabase
             .from("personnel")
             .select("*")
+            .eq("system_status", "registered") // <-- filter only registered
             .filter("metadata->worker_status->>1", "eq", "Available")
             .order("personnel_identifier", { ascending: true })
             .limit(limit);
@@ -484,6 +441,7 @@ export const api = {
         const { count: previousCount, error: prevError } = await supabase
             .from("personnel")
             .select("*", { count: "exact", head: true })
+            .eq("system_status", "registered") // <-- filter only registered
             .lt("created_at", startOfCurrentMonth.toISOString());
 
         if (prevError) {
@@ -495,7 +453,8 @@ export const api = {
         // ------------------------------------
         const { count: currentCount, error: currError } = await supabase
             .from("personnel")
-            .select("*", { count: "exact", head: true });
+            .select("*", { count: "exact", head: true })
+            .eq("system_status", "registered"); // <-- filter only registered
 
         if (currError) {
             throw currError;
@@ -585,7 +544,67 @@ export const api = {
             total,
             change: total - previous,
         };
-    }
+    },
+    async getResponseStats() {
+        // -----------------------------
+        // 🕒 UTC month boundary
+        // -----------------------------
+        const now = new Date();
+        const startOfCurrentMonth = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+        );
+
+        // ---------- CURRENT ----------
+        const { data: activeOutbreaks } = await supabase
+            .from("outbreaks")
+            .select("id")
+            .eq("status", "active");
+
+        const currentTotal = activeOutbreaks?.length ?? 0;
+
+        const { data: currentDeployments } = await supabase
+            .from("deployments")
+            .select("outbreak_id")
+            .eq("deploy_status", "active");
+
+        const currentResponded = new Set(
+            currentDeployments?.map(d => d.outbreak_id)
+        ).size;
+
+        const currentRate =
+            currentTotal === 0
+                ? 0
+                : Math.round((currentResponded / currentTotal) * 100);
+
+        // ---------- PREVIOUS ----------
+        const { data: prevOutbreaks } = await supabase
+            .from("outbreaks")
+            .select("id")
+            .eq("status", "active")
+            .lt("created_at", startOfCurrentMonth.toISOString());
+
+        const prevTotal = prevOutbreaks?.length ?? 0;
+
+        const { data: prevDeployments } = await supabase
+            .from("deployments")
+            .select("outbreak_id")
+            .eq("deploy_status", "active")
+            .lt("created_at", startOfCurrentMonth.toISOString());
+
+        const prevResponded = new Set(
+            prevDeployments?.map(d => d.outbreak_id)
+        ).size;
+
+        const previousRate =
+            prevTotal === 0
+                ? 0
+                : Math.round((prevResponded / prevTotal) * 100);
+
+        return {
+            rate: currentRate,
+            change: currentRate - previousRate
+        };
+    },
 }
 
 export function getAge(dob: string) {

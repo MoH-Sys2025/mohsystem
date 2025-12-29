@@ -8,6 +8,17 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
     Dialog,
     DialogContent,
     DialogHeader,
@@ -42,13 +53,14 @@ import {
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
-import {PaginationNext} from "@/components/ui/pagination.tsx";
 
 interface WorkforceRegProps {
     onNavigate: (page: string) => void;
 }
 
 export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
+    const [deleteHCWDia, setDeleteHCWDia] = useState<boolean>(false);
+    const [selectedHCW, setSelectedHCW] = useState({});
     const { ref, size } = useElementSize<HTMLDivElement>();
     const contentWidth = size.width - size.paddingLeft - size.paddingRight;
 
@@ -471,9 +483,9 @@ return (
                                             <TableHead
                                                 key={h}
                                                 className={`text-xs uppercase tracking-wider px-3 py-2 text-left
-            ${[""].includes(h) ? "hidden md:table-cell" : ""}
-            ${h === "Actions" ? "bg-neutral-50" : ""}
-          `}
+                                                ${[""].includes(h) ? "hidden md:table-cell" : ""}
+                                                ${h === "Actions" ? "bg-neutral-50" : ""}
+                                              `}
                                                 style={{ minWidth: h === "Name" ? 100 : 60 }}
                                             >
                                                 {h}
@@ -547,7 +559,7 @@ return (
                                                         </Button>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="p-2 bg-white shadow-md border border-gray-200 w-35 rounded-sm ml-auto z-99">
-                                                        <Button variant="ghost" className="font-normal flex cursor-pointer items-center gap-2">
+                                                        <Button onClick={()=> {setDeleteHCWDia(true); setSelectedHCW(worker)}} variant="ghost" className="font-normal flex cursor-pointer items-center gap-2">
                                                             <Trash2  className="w-4 h-4 text-red-600" /> Delete
                                                         </Button>
                                                         <Button
@@ -637,10 +649,28 @@ return (
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-
-
-
-
+        <AlertDialog open={deleteHCWDia}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to Delete ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Deleting a healthcare worker will remove them from the system and might affect deployments history.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={()=>setDeleteHCWDia(false)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={
+                        async ()=>{
+                            api.deleteHCW(selectedHCW?.id); setDeleteHCWDia(false);
+                            setLoading(true)
+                            const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
+                            setPersonnel(data);
+                            setLoading(false)
+                        }
+                    }>Continue</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
 );
 
