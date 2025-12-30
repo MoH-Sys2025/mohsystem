@@ -40,7 +40,6 @@ import {
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
     const [opendeleteDialog, setOpenDeleteDialog] = useState(false);
-    const [personnels, setPersonnels] = useState([]);
     const [uploaded, setUploaded] = useState(false);
     const [step, setStep] = useState(1);
     const [competencies, setCompetencies] = useState({});
@@ -103,7 +102,6 @@ export default function ExcelUploader() {
             const { data: c } = await supabase
                 .from("cadres")
                 .select("id, name");
-
             setDistricts(d || []);
             setFacilities(f || []);
             setCadres(c || []);
@@ -151,8 +149,10 @@ export default function ExcelUploader() {
         try {
             // Build the array of personnel records
             const payload = rows.map((row, index) => {
-                const district_id = getDistrictIdByName(row.district);  // administrative_regions lookup
+                const district_id = getDistrictIdByName(row.district);
+                const cadre_id = row.cadre_id || getCadreId(row.cadre); // resolve cadre_id if not already present
 
+                console.log(cadre_id)
                 return {
                     first_name: row.first_name,
                     last_name: row.last_name,
@@ -162,15 +162,12 @@ export default function ExcelUploader() {
                     gender: row.gender,
                     role: row.position,
                     qualifications: [row.qualification],
-                    cadre_id: row.cadre_id,
-                    current_facility_id: row.current_facility_id,   // selected from popover
-                    current_district_id: district_id,              // resolved from district name
-
+                    cadre_id, // send the resolved cadre_id
+                    current_facility_id: row.current_facility_id,
+                    current_district_id: district_id,
                     employment_status: row.employment_status,
-
                     ihrmis_sync: false,
                     dhis2_sync: false,
-
                     metadata: {
                         age: row.age,
                         district: row.district,
@@ -180,6 +177,7 @@ export default function ExcelUploader() {
                     }
                 };
             });
+
 
             // Insert into personnel Table
             const { error } = await supabase

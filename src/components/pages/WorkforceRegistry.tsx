@@ -37,7 +37,8 @@ import {
     LoaderPinwheel,
     Link as LinkIcon,
     Unlink,
-    Trash2, User2, FileSpreadsheet, FileText, File
+    Trash2, User2, FileSpreadsheet, FileText, File, ChevronDown, Users, UserCheck, LoaderIcon, BriefcaseMedical,
+    UsersRoundIcon, Truck, CheckCircle, Clock, Briefcase, XCircle, Circle
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {districts} from "@/supabase/districts"
@@ -59,6 +60,11 @@ interface WorkforceRegProps {
 }
 
 export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
+    type SortDir = "asc" | "desc" | null;
+
+    const [sortBy, setSortBy] = useState<string | null>(null);
+    const [sortDir, setSortDir] = useState<SortDir>(null);
+
     const [deleteHCWDia, setDeleteHCWDia] = useState<boolean>(false);
     const [selectedHCW, setSelectedHCW] = useState({});
     const { ref, size } = useElementSize<HTMLDivElement>();
@@ -85,6 +91,30 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
     const { setSelectedMOHData } = useSelectedMOHData();
 
+    const SORT_FIELDS: Record<string, (w: any) => any> = {
+        id: (w) => w.personnel_identifier ?? w.personnel_id,
+        name: (w) => `${w.first_name ?? ""} ${w.last_name ?? ""}`,
+        cadre: (w) => w.cadre_name?.toLowerCase() ?? "",
+        role: (w) => w.role ?? "",
+        district: (w) => w.metadata?.district ?? "",
+        status: (w) => w.metadata?.worker_status?.[1] ?? "",
+        certifications: (w) => w.qualifications ?? "",
+    };
+
+
+
+    const HEADER_TO_SORT_KEY: Record<string, string | null> = {
+        "Worker ID": "id",
+        "Name": "name",
+        "Cadre": "cadre",
+        "Role": "role",
+        "District": "district",
+        "Status": "status",
+        "Certifications": "certifications",
+        "Competencies": null, // not sortable
+        "Actions": null,       // not sortable
+    };
+
     function handleExport() {
         if (!exportType) return;
 
@@ -95,55 +125,48 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
         switch (exportType) {
             case "csv":
-                exportCSV(filteredWorkers, safeName, selectedColumns); // pass filename
+                exportCSV(sortedWorkers, safeName, selectedColumns);
                 break;
             case "excel":
-                exportExcel(filteredWorkers, safeName, selectedColumns);
+                exportExcel(sortedWorkers, safeName, selectedColumns);
                 break;
             case "pdf":
-                exportPDF(filteredWorkers, safeName, selectedColumns);
+                exportPDF(sortedWorkers, safeName, selectedColumns);
                 break;
             case "txt":
-                exportText(filteredWorkers, safeName, selectedColumns);
+                exportText(sortedWorkers, safeName, selectedColumns);
                 break;
         }
     }
 
 
     useEffect(() => {
-    async function fetchPersonnel() {
-        try {
-            const data = await api.listPersonnel(1000);
-            const cadresData = await api.listCadres(1000);
+        async function fetchPersonnel() {
+            try {
+                const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
+                const cadresData = Array.isArray(await api.listCadres(1000)) ? await api.listCadres(1000) : [];
+                setCadres(cadresData);
 
-            setPersonnel(Array.isArray(data) ? data : []);
-            setCadres(Array.isArray(cadresData) ? cadresData : []);
-            // const totalAvailable = data.filter(
-            //     item => item.metadata?.worker_status?.includes("Available")
-            // ).length;
-            //
-            // const totalDeployed = data.filter(
-            //     item => item.metadata?.worker_status?.includes("Deployed")
-            // ).length;
-            //
-            // const totalUnemployed = data.filter(
-            //     item => item.employment_status.includes("Unemployed")
-            // ).length;
+                // Map cadre_name into worker objects
+                const mappedWorkers = data.map(worker => {
+                    const cadre = cadresData.find(c => String(c.id) === String(worker.cadre_id));
+                    return { ...worker, cadre_name: cadre?.name ?? "—" };
+                });
 
-            // setAvailable(totalAvailable);
-            // setDeployed(totalDeployed);
-            // setUnimployed(totalUnemployed);
-        } catch (err: any) {
-            setError(err?.message ?? String(err));
-        } finally {
-            setLoading(false);
+                setPersonnel(mappedWorkers);
+            } catch (err: any) {
+                setError(err?.message ?? String(err));
+            } finally {
+                setLoading(false);
+            }
         }
-    }
 
-    fetchPersonnel();
-}, []);
+        fetchPersonnel();
+    }, []);
 
-const filterOptions = [
+
+    const filterOptions = [
+    { key: "cadre", label: "Cadre" },
     { key: "role", label: "Role" },
     { key: "district", label: "District" },
     { key: "status", label: "Status" },
@@ -152,6 +175,7 @@ const filterOptions = [
 ];
 
 const fieldMap: Record<string, string | null> = {
+    cadre: "cadre",
     role: "role",
     district: "metadata.district",
     status: "metadata.worker_status",
@@ -181,32 +205,45 @@ const fieldMap: Record<string, string | null> = {
         return value;
     }
 
-const filteredWorkers = workers.filter((worker) => {
-    const hay = Object.values(worker).map(normalizeForSearch).join(" ").toLowerCase();
-    const searchMatch = hay.includes(searchTerm.toLowerCase());
+    const filteredWorkers = workers.filter((worker) => {
+        const hay = Object.values(worker).map(normalizeForSearch).join(" ").toLowerCase();
+        const searchMatch = hay.includes(searchTerm.toLowerCase());
 
-    if (!selectedFilter || !filterValue) return searchMatch;
+        if (!selectedFilter || !filterValue) return searchMatch;
 
-    const workerValue = getField(worker, selectedFilter);
+        const workerValue = getField(worker, selectedFilter);
 
-    if (Array.isArray(workerValue)) {
+        if (Array.isArray(workerValue)) {
+            return (
+                searchMatch &&
+                workerValue.some((c: any) =>
+                    String(c).toLowerCase().includes(filterValue.toLowerCase())
+                )
+            );
+        }
+
         return (
             searchMatch &&
-            workerValue.some((c: any) =>
-                String(c).toLowerCase().includes(filterValue.toLowerCase())
-            )
+            String(workerValue ?? "")
+                .toLowerCase()
+                .includes(filterValue.toLowerCase())
         );
-    }
-function percentage(perValue, value1, value2) {
-    return (perValue*100/(value1+value2));
-}
-    return (
-        searchMatch &&
-        String(workerValue ?? "")
-            .toLowerCase()
-            .includes(filterValue.toLowerCase())
-    );
-});
+    });
+
+    const sortedWorkers = [...filteredWorkers].sort((a, b) => {
+        if (!sortBy || !sortDir) return 0;
+
+        const av = SORT_FIELDS[sortBy]?.(a);
+        const bv = SORT_FIELDS[sortBy]?.(b);
+
+        if (av == null) return 1;
+        if (bv == null) return -1;
+
+        return sortDir === "asc"
+            ? String(av).localeCompare(String(bv))
+            : String(bv).localeCompare(String(av));
+    });
+
 
     const stats = {
         total: filteredWorkers.length,
@@ -234,7 +271,14 @@ if (error)
             <Info /> Error loading table data.
         </div>
     );
-
+    const statsIcons = [
+        <Users size={18} />,
+        <Truck size={18} />,
+        <CheckCircle size={18} />,
+        <Clock size={18} />,
+        <Briefcase size={18} />,
+        <XCircle size={18} />
+    ];
 const formatInitials = (worker: any) => {
     const names = [
         ...(worker.first_name ? String(worker.first_name).split(/\s+/) : []),
@@ -243,6 +287,72 @@ const formatInitials = (worker: any) => {
     const initials = names.map((n: string) => n[0]).filter(Boolean).join(" ");
     return `${initials}`.trim();
 };
+
+    function SortHeader({
+                            label,
+                            columnKey,
+                        }: {
+        label: string;
+        columnKey: string;
+    }) {
+        return (
+            <div className="flex items-center justify-between gap-1">
+                <span>{label}</span>
+
+                <Popover >
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 p-0 text-neutral-500"
+                        >
+                            <ChevronDown
+                                className={`h-4 w-4 ${
+                                    sortBy === columnKey ? "text-blue-600" : "text-neutral-500"
+                                }`}
+                            />
+
+                        </Button>
+                    </PopoverTrigger>
+
+                    <PopoverContent className="w-32 flex flex-col p-1 bg-white shadow-md rounded-md z-11">
+                        <Button
+                            variant="ghost"
+                            className="w-full justify-start text-xs"
+                            onClick={() => {
+                                setSortBy(columnKey);
+                                setSortDir("asc");
+                            }}
+                        >
+                            ↑ Ascending
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            className="w-full justify-start text-xs"
+                            onClick={() => {
+                                setSortBy(columnKey);
+                                setSortDir("desc");
+                            }}
+                        >
+                            ↓ Descending
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            className="w-full justify-start text-xs text-neutral-500"
+                            onClick={() => {
+                                setSortBy(null);
+                                setSortDir(null);
+                            }}
+                        >
+                            Clear
+                        </Button>
+                    </PopoverContent>
+                </Popover>
+            </div>
+        );
+    }
 
 return (
     <div ref={ref} className="space-y-8 p-6 px-3">
@@ -269,7 +379,7 @@ return (
                     ].map((value, i) => (
                         <div key={i} className="bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-1 col-span-3  md:col-span-1 lg:col-span-2">
                             <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
-                                {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
+                                <span>{statsIcons[i] ?? <Circle size={18} />}</span> {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
                             </p>
                         </div>
                     ))}
@@ -287,12 +397,12 @@ return (
                             ].map((value, i) => (
                                 <div key={i} className="bg-gray-100  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
                                     <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
-                                        {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
+                                        {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg"> {[value][0]}</span>
                                     </p>
                                 </div>
                             ))}
                         </div>
-                        <div className="grid grid-cols-12 gap-2 gap-1 md:gap-2">
+                        <div className="grid grid-cols-12 gap-1 md:gap-2">
                             <div className="relative sm:col-span-8 md:col-span-8 col-span-12">
 
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -473,6 +583,7 @@ return (
                                         {[
                                             "Worker ID",
                                             "Name",
+                                            "Cadre",
                                             "Role",
                                             "District",
                                             "Status",
@@ -486,16 +597,20 @@ return (
                                                 ${[""].includes(h) ? "hidden md:table-cell" : ""}
                                                 ${h === "Actions" ? "bg-neutral-50" : ""}
                                               `}
-                                                style={{ minWidth: h === "Name" ? 100 : 60 }}
-                                            >
-                                                {h}
+                                                style={{ minWidth: h === "Name" ? 100 : 60 }}>
+                                                {HEADER_TO_SORT_KEY[h] ? (
+                                                    <SortHeader label={h} columnKey={HEADER_TO_SORT_KEY[h]!} />
+                                                ) : (
+                                                    <span>{h}</span>
+                                                )}
+
                                             </TableHead>
                                         ))}
                                     </TableRow>
                                 </TableHeader>
 
                                 <TableBody>
-                                    {filteredWorkers.map((worker, index) => (
+                                    {sortedWorkers.map((worker, index) => (
                                         <TableRow key={worker.id} className="hover:bg-neutral-50">
                                             <TableCell className="px-3 py-1 text-xs whitespace-nowrap">
                                                 {worker.personnel_identifier ?? worker.personnel_id ?? "—"}
@@ -503,14 +618,18 @@ return (
 
                                             <TableCell className="px-3 py-1 text-xs">
                                                 <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-neutral-900">
-              {worker.first_name} {worker.last_name}
-            </span>
+                                                    <span className="text-sm font-medium text-neutral-900">
+                                                      {worker.first_name} {worker.last_name}
+                                                    </span>
                                                 </div>
                                             </TableCell>
 
                                             <TableCell className="px-3 py-1 text-xs">
-                                                {cadres[index]?.name ?? "—"}
+                                                {worker.cadre_name}
+                                            </TableCell>
+
+                                            <TableCell className="px-3 py-1 text-xs">
+                                                {worker.role ?? "—"}
                                             </TableCell>
 
                                             <TableCell className="px-3 py-1 text-xs">
@@ -661,11 +780,12 @@ return (
                     <AlertDialogCancel onClick={()=>setDeleteHCWDia(false)}>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={
                         async ()=>{
-                            api.deleteHCW(selectedHCW?.id); setDeleteHCWDia(false);
-                            setLoading(true)
+                            setLoading(true);
+                            await api.deleteHCW(selectedHCW?.id);
+                            setDeleteHCWDia(false);
                             const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
                             setPersonnel(data);
-                            setLoading(false)
+                            setLoading(false);
                         }
                     }>Continue</AlertDialogAction>
                 </AlertDialogFooter>
