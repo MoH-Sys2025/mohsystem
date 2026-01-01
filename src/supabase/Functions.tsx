@@ -507,6 +507,12 @@ export const api = {
             change: total - previous,
         };
     },
+    async softDeleteHCWs(workerIds: string[]) {
+        return supabase
+            .from("personnel")
+            .update({ system_status: "deleted" })
+            .in("id", workerIds);
+    },
     async getActiveOutbreakStats() {
         // -----------------------------
         // 🕒 UTC month boundary
@@ -699,17 +705,45 @@ export function exportPDF(data: any[], name: string, selectedColumns: string[]) 
     });
 
     const doc = new jsPDF();
-    doc.addImage("/logo.png", "PNG", 80, 10, 50, 20); // your logo
-    doc.setFontSize(18);
-    doc.text("MOERS Health Workers Registry", 105, 40, { align: "center" });
+    const imgProps = doc.getImageProperties("/logo.png");
+    const imgWidth = 20;
+    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.addImage("/logo.png", "PNG",  (pageWidth - imgWidth) / 2, 10, imgWidth, imgHeight);
+
+    doc.setFontSize(14);
+    doc.text("MALAWI OUTBREAK AND EMERGENCY RESPONSE", 105, 42, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("Healthcare Employees' Registry", 105, 49, { align: "center"});
 
     autoTable(doc, {
-        startY: 50,
-        head: [EXPORT_COLUMNS.filter(c => selectedColumns.includes(c.label)).map(c => c.label)],
+        startY: 58,
+        head: [
+            EXPORT_COLUMNS
+                .filter(c => selectedColumns.includes(c.label))
+                .map(c => c.label)
+        ],
         body: formatted.map(row =>
-            EXPORT_COLUMNS.filter(c => selectedColumns.includes(c.label)).map(c => row[c.label])
+            EXPORT_COLUMNS
+                .filter(c => selectedColumns.includes(c.label))
+                .map(c => row[c.label])
         ),
     });
+
+// --- Footer text ---
+    const marginLeft = 14;
+    const marginBottom = 14;
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const generatedText = `Generated on: ${new Date().toLocaleString()}`;
+
+    doc.setFontSize(9);
+    doc.text(
+        generatedText,
+        marginLeft,
+        pageHeight - marginBottom
+    );
+
 
     doc.save(`${name}.pdf`);
 }
@@ -726,6 +760,12 @@ export const EXPORT_COLUMNS = [
         label: "Name",
         getValue: (w: any) =>
             `${w.first_name ?? ""} ${w.last_name ?? ""}`.trim(),
+    },
+    {
+        key: "cadre",
+        label: "Cadre",
+        getValue: (w: any, index: number) =>
+            w.cadre_name?.toLowerCase() ?? "—",
     },
     {
         key: "role",

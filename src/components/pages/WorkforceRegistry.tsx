@@ -62,6 +62,7 @@ interface WorkforceRegProps {
 export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     type SortDir = "asc" | "desc" | null;
 
+    const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
     const [sortBy, setSortBy] = useState<string | null>(null);
     const [sortDir, setSortDir] = useState<SortDir>(null);
 
@@ -84,7 +85,7 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
     const [exportType, setExportType] = useState<"pdf" | "csv" | "excel" | "txt" | null>(null);
-    const [fileName, setFileName] = useState("workforce_registry");
+    const [fileName, setFileName] = useState("Healthcare Employees Registry");
     const [selectedColumns, setSelectedColumns] = useState(
         EXPORT_COLUMNS.map(c => c.label) // default: all columns selected
     );
@@ -101,6 +102,21 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
         certifications: (w) => w.qualifications ?? "",
     };
 
+    const toggleWorkerSelection = (id: string) => {
+        setSelectedWorkerIds(prev =>
+            prev.includes(id)
+                ? prev.filter(wid => wid !== id)
+                : [...prev, id]
+        );
+    };
+
+    const toggleSelectAllWorkers = () => {
+        if (selectedWorkerIds.length === sortedWorkers.length) {
+            setSelectedWorkerIds([]);
+        } else {
+            setSelectedWorkerIds(sortedWorkers.map(w => w.id));
+        }
+    };
 
 
     const HEADER_TO_SORT_KEY: Record<string, string | null> = {
@@ -272,12 +288,12 @@ if (error)
         </div>
     );
     const statsIcons = [
-        <Users size={18} />,
-        <Truck size={18} />,
-        <CheckCircle size={18} />,
-        <Clock size={18} />,
-        <Briefcase size={18} />,
-        <XCircle size={18} />
+        <Users size={15} />,
+        <Truck size={15} />,
+        <CheckCircle size={15} />,
+        <Clock size={15} />,
+        <Briefcase size={15} />,
+        <XCircle size={15} />
     ];
 const formatInitials = (worker: any) => {
     const names = [
@@ -379,7 +395,7 @@ return (
                     ].map((value, i) => (
                         <div key={i} className="bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-1 col-span-3  md:col-span-1 lg:col-span-2">
                             <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
-                                <span>{statsIcons[i] ?? <Circle size={18} />}</span> {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg">{[value][0]}</span>
+                                <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-lg">{[value][0]}</span>
                             </p>
                         </div>
                     ))}
@@ -396,14 +412,14 @@ return (
                                 stats.unemployed,
                             ].map((value, i) => (
                                 <div key={i} className="bg-gray-100  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
-                                    <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
-                                        {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} : <span className="text-black text-lg"> {[value][0]}</span>
+                                    <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center justify-between gap-1">
+                                        <span className="flex flex-row items-center gap-2 justify-start">{statsIcons[i] ?? <Circle size={15} />}{["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-lg"> {[value][0]}</span>
                                     </p>
                                 </div>
                             ))}
                         </div>
                         <div className="grid grid-cols-12 gap-1 md:gap-2">
-                            <div className="relative sm:col-span-8 md:col-span-8 col-span-12">
+                            <div className="relative sm:col-span-12 md:col-span-7 col-span-12">
 
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                                 <input type="text"
@@ -414,7 +430,7 @@ return (
                                 />
                             </div>
 
-                            <div className="col-span-12 sm:col-span-4 flex flex-row justify-start gap-1 lg:gap-2">
+                            <div className="col-span-12 sm:col-span-12 md:col-span-5 flex flex-row justify-start gap-1 lg:gap-2">
                                 <Popover open={filterOpen} onOpenChange={setFilterOpen}>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
@@ -569,7 +585,18 @@ return (
                                 }} variant="outline" className=" justify-start ml-auto text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
                                     <Loader2 className="w-2 h-2" /> Reload
                                 </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    disabled={(selectedWorkerIds.length <= 0)}
+                                    onClick={() => setDeleteHCWDia(true)}
+                                    className={`ml - 2`}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete ({selectedWorkerIds.length})
+                                </Button>
                             </div>
+
                         </div>
 
                     </div>
@@ -599,7 +626,16 @@ return (
                                               `}
                                                 style={{ minWidth: h === "Name" ? 100 : 60 }}>
                                                 {HEADER_TO_SORT_KEY[h] ? (
-                                                    <SortHeader label={h} columnKey={HEADER_TO_SORT_KEY[h]!} />
+                                                    <SortHeader label={
+                                                        (h === "Worker ID") ? <span className="flex flex-row items-center gap-1"><input
+                                                            type="checkbox"
+                                                            checked={
+                                                                sortedWorkers.length > 0 &&
+                                                                selectedWorkerIds.length === sortedWorkers.length
+                                                            }
+                                                            onChange={toggleSelectAllWorkers}
+                                                        /> {h} </span> : h
+                                                    } columnKey={HEADER_TO_SORT_KEY[h]!} />
                                                 ) : (
                                                     <span>{h}</span>
                                                 )}
@@ -612,7 +648,12 @@ return (
                                 <TableBody>
                                     {sortedWorkers.map((worker, index) => (
                                         <TableRow key={worker.id} className="hover:bg-neutral-50">
-                                            <TableCell className="px-3 py-1 text-xs whitespace-nowrap">
+                                            <TableCell className="px-3 py-1 text-xs whitespace-nowrap gap-1 flex flex-row items-center"Reloa>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedWorkerIds.includes(worker.id)}
+                                                    onChange={() => toggleWorkerSelection(worker.id)}
+                                                />
                                                 {worker.personnel_identifier ?? worker.personnel_id ?? "—"}
                                             </TableCell>
 
@@ -779,14 +820,38 @@ return (
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={()=>setDeleteHCWDia(false)}>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={
-                        async ()=>{
+                        async () => {
                             setLoading(true);
-                            await api.deleteHCW(selectedHCW?.id);
+
+                            const idsToDelete =
+                                selectedWorkerIds.length > 0
+                                    ? selectedWorkerIds
+                                    : selectedHCW?.id
+                                        ? [selectedHCW.id]
+                                        : [];
+
+                            if (idsToDelete.length === 0) {
+                                setLoading(false);
+                                return;
+                            }
+
+                            const { error } = await api.softDeleteHCWs(idsToDelete);
+
+                            if (error) {
+                                toast.error("Error deleting selected Healthcare workers");
+                            }
+
                             setDeleteHCWDia(false);
-                            const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
+                            setSelectedWorkerIds([]);
+
+                            const data = Array.isArray(await api.listPersonnel(1000))
+                                ? await api.listPersonnel(1000)
+                                : [];
+
                             setPersonnel(data);
                             setLoading(false);
                         }
+
                     }>Continue</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
