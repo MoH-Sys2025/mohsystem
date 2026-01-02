@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import {Toaster} from "sonner";
 import {SelectedMOHDataProvider} from "@/components/DataContext.tsx";
 import {AuthProvider, useSession} from "@/contexts/AuthProvider.tsx";
+import NotificationListener from "@/components/NotificationListener.tsx";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -21,10 +22,10 @@ export default function App() {
 
   return (
       <AuthProvider>
+          <NotificationListener />
           <SelectedMOHDataProvider>
               <Toaster richColors position={'top-center'}  />
               <Dashboard onLogout={() => setIsLoggedIn(false)} />
-
               <div className="fixed bottom-2 right-2 z-50 rounded bg-black px-3 py-1 text-white text-xs">
                   <span className="sm:hidden">xs</span>
                   <span className="hidden sm:block md:hidden">sm</span>
