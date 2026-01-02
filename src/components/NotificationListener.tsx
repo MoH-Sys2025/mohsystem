@@ -23,7 +23,6 @@ export default function NotificationListener() {
                 (payload) => {
                     const notification = payload.new;
 
-                    // 🔔 THIS is the important part
                     showAlert({
                         title: notification.title,
                         description: notification.message,

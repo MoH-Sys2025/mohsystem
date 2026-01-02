@@ -55,6 +55,8 @@ import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
 import {useSession} from "@/contexts/AuthProvider.tsx";
+import {showAlert} from "@/components/NotificationsAlerts.tsx";
+import {toast} from "sonner";
 
 interface WorkforceRegProps {
     onNavigate: (page: string) => void;
@@ -384,10 +386,8 @@ return (
                         stats.employed,
                         stats.unemployed
                     ].map((value, i) => (
-                        <div key={i} className="bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-2 col-span-3  md:col-span-1 lg:col-span-2">
-                            <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
-                                <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-md">{[value][0]}</span>
-                            </p>
+                        <div key={i} className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-1 bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-2 col-span-3  md:col-span-1 lg:col-span-2">
+                            <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-md">{[value][0]}</span>
                         </div>
                     ))}
                 </div>
@@ -421,9 +421,9 @@ return (
                                 />
                             </div>
 
-                            <div className="col-span-12 sm:col-span-12 md:col-span-6 lg:col-span-5 flex flex-row justify-start items-center gap-1 lg:gap-2">
+                            <div className="col-span-12 grid grid-cols-3 md:grid-cols-4 wrap-anywhere flex-wrap flex-row md:col-span-6 lg:col-span-5 justify-start items-center gap-1 lg:gap-2">
                                 <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-                                    <PopoverTrigger asChild>
+                                    <PopoverTrigger className="hidden" asChild>
                                         <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
                                             <Filter size={8} className="w-8 h-8" />
                                             Filter
@@ -573,17 +573,17 @@ return (
                                     const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
                                     setPersonnel(data);
                                     setLoading(false)
-                                }} variant="outline" className=" justify-start ml-auto text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
+                                }} variant="outline" className=" justify-start md:ml-auto text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
                                     <Loader2 className="w-2 h-2" /> Reload
                                 </Button>
                                 <Button
-                                    variant="destructive"
+                                    variant="outline"
                                     size="sm"
                                     disabled={(selectedWorkerIds.length <= 0)}
                                     onClick={() => setDeleteHCWDia(true)}
                                     className={`ml - 2`}
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className="w-4 h-4 text-red-600" />
                                     ({selectedWorkerIds.length})
                                 </Button>
                             </div>
@@ -800,16 +800,16 @@ return (
             </DialogContent>
         </Dialog>
         <AlertDialog open={deleteHCWDia}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to Delete ?</AlertDialogTitle>
-                    <AlertDialogDescription>
+            <AlertDialogContent className="md:p-5 p-3 py-2 pt-5 lg:w-4/12 md:w-6/12 w-9/12">
+                <AlertDialogHeader className="">
+                    <AlertDialogTitle className="text-md">Are you sure you want to Delete ?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm">
                         Deleting a healthcare worker will remove them from the system and might affect deployments history.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={()=>setDeleteHCWDia(false)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={
+                    <AlertDialogCancel className="text-xs px-2" onClick={()=>setDeleteHCWDia(false)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction className="text-xs px-2" onClick={
                         async () => {
                             setLoading(true);
 
@@ -841,7 +841,6 @@ return (
                                     }
                                 }
                             )
-
                             setDeleteHCWDia(false);
                             setSelectedWorkerIds([]);
 
@@ -853,7 +852,7 @@ return (
                             setLoading(false);
                         }
 
-                    }>Continue</AlertDialogAction>
+                    }><Loader2 className={(loading) ? "animate-spin" : "hidden"} /> Continue</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

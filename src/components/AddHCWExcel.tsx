@@ -36,7 +36,6 @@ import {
     TableHead,
     TableHeader,
     TableRow,} from "@/components/ui/table";
-import {showAlert} from "@/components/NotificationsAlerts.tsx";
 import {useSession} from "@/contexts/AuthProvider.tsx";
 
 export default function ExcelUploader() {
