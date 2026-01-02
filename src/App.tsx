@@ -22,9 +22,9 @@ export default function App() {
 
   return (
       <AuthProvider>
-          <NotificationListener />
           <SelectedMOHDataProvider>
               <Toaster richColors position={'top-center'}  />
+              <NotificationListener />
               <Dashboard onLogout={() => setIsLoggedIn(false)} />
               <div className="fixed bottom-2 right-2 z-50 rounded bg-black px-3 py-1 text-white text-xs">
                   <span className="sm:hidden">xs</span>

@@ -45,7 +45,6 @@ export const api = {
             toast.error(error.message || "Failed to send notification");
             throw error;
         }
-        console.log(data)
         return data;
     },
     async createPersonnel(payload: { first_name: string; last_name: string; other_names: string; gender: string; date_of_birth: string; phone: string; email: string; cadre_id: string; current_district_id: string; employment_status: string; hire_date: string; exit_date: string; metadata: { district: string; competencies: never[]; age: string; worker_status: string[]; }; qualifications: never[]; }) {
