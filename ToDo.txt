@@ -28,3 +28,67 @@ npx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=v
 pnpm dlx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=neutral&theme=lime&iconLibrary=lucide&font=inter&menuAccent=subtle&menuColor=default&radius=large&template=vite" --template vite
 bunx --bun shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=neutral&theme=lime&iconLibrary=lucide&font=inter&menuAccent=subtle&menuColor=default&radius=large&template=vite" --template vite
 from deployments table  should use only rows with columns deploy_status "active" and status "Deployed" or "Pending" for Deployed bars in graph. In personnel table use the column
+
+// NotificationListener.jsx
+import { useEffect, useRef, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize once (move to your app init code)
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export default function NotificationListener() {
+  const [notifications, setNotifications] = useState([]);
+  const channelRef = useRef(null);
+
+  useEffect(() => {
+    // Avoid duplicate subscription
+    if (channelRef.current && channelRef.current.state === 'SUBSCRIBED') return;
+
+    const topic = 'notifications:all';
+    const channel = supabase.channel(topic, {
+      config: { private: true }
+    });
+
+    channel
+      .on('broadcast', { event: '*' }, (payload) => {
+        // payload looks like:
+        // { event: 'INSERT' | 'UPDATE' | 'DELETE', payload: { /* row data */ }, table: 'notifications', schema: 'public' }
+        const { event, payload: data } = payload;
+        // Handle based on event type if needed
+        setNotifications((prev) => {
+          if (event === 'INSERT') return [data, ...prev];
+          if (event === 'UPDATE') return prev.map(n => (n.id === data.id ? data : n));
+          if (event === 'DELETE') return prev.filter(n => n.id !== data.id);
+          return prev;
+        });
+      })
+      .subscribe((status) => {
+        // Optional: status will show join progress; you can act on errors
+        console.log('channel status', topic, status);
+      });
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <div>
+      <h3>Notifications</h3>
+      <ul>
+        {notifications.map((n) => (
+          <li key={n.id}>
+            <strong>{n.title}</strong> — {n.body}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

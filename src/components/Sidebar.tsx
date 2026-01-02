@@ -7,9 +7,21 @@ import {
     GraduationCap,
     Award,
     Settings,
-    LogOut, Bell
+    LogOut, Bell, User
 } from 'lucide-react';
 import {Button} from "@/components/ui/button.tsx";
+import {useSession} from "@/contexts/AuthProvider.tsx";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from "@/components/ui/alert-dialog.tsx";
+import {api} from "@/supabase/Functions.tsx";
+import {useState} from "react";
 
 interface SidebarProps {
     currentPage: string;
@@ -18,6 +30,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
+    const session = useSession()
+    const [logoutHCWDia, setLogoutHCWDia] = useState<boolean>(false)
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, disabled: false},
         { id: 'workforce', label: 'Workforce Registry', icon: Users, disabled: false },
@@ -61,7 +75,18 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
                                 key={item.id}
                                 variant="ghost"
                                 disabled={item.disabled}
-                                onClick={() => onNavigate(item.id)}
+                                onClick={() => {
+                                    // still loading session
+                                    if (session === undefined) return null;
+
+                                    // not logged in
+                                    if (!session) {
+                                        onNavigate("login")
+                                    }
+                                    else {
+                                        onNavigate(item.id)
+                                    }
+                                }}
                                 className={`
                   w-full flex flex-row justify-start items-center px-3 py-2 rounded-md transition-colors
                   ${isActive ? 'bg-neutral-100 text-neutral-900'
@@ -80,42 +105,59 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
 
             {/* Bottom Section */}
             <div className="p-3 border-t border-neutral-200 space-y-1">
-                <button
+                <Button variant="ghost"
                     onClick={() => onNavigate('settings')}
                     className={`
-            w-full flex items-center px-3 py-2 rounded-md transition-colors
+            w-full flex items-center px-3 py-2 justify-start rounded-md transition-colors
             ${currentPage === 'settings'
                         ? 'bg-neutral-100 text-neutral-900'
                         : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
                     }
           `}
                 >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-5 h-5 lg:ml-1.5" />
                     <span className="hidden lg:inline ml-3">Settings</span>
-                </button>
+                </Button>
 
                 {/* USER SECTION */}
-                <button
-                    onClick={onLogout}
+                <Button
+                    onClick={()=>setLogoutHCWDia(true)}
+                    variant="ghost"
                     className="
-            w-full flex items-center gap-3 px-3 py-2 rounded-md
+            w-full flex items-center justify-start  lg:gap-3 py-2 rounded-md
             text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors
           "
                 >
-                    <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center">
-                        <span className="text-neutral-700">AD</span>
+                    <div className="w-7 h-7 md:w-8 md:h-8 bg-neutral-200 rounded-full flex items-center justify-center">
+                        <span className="text-neutral-700"><User/></span>
                     </div>
 
                     {/* USER TEXT ONLY ON lg+ */}
                     <div className="hidden lg:flex flex-col flex-1 text-left">
-                        <div className="text-neutral-900 text-sm">Admin User</div>
-                        <div className="text-neutral-500 text-xs">admin@health.gov.mw</div>
+                        <div className="text-neutral-900 text-sm">Administrator</div>
+                        <div className="text-neutral-500 text-xs">{session?.user.email}</div>
                     </div>
 
                     {/* Logout icon only on lg+ */}
                     <LogOut className="w-4 h-4 hidden lg:block" />
-                </button>
+                </Button>
             </div>
+            <AlertDialog open={logoutHCWDia}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Logout ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to logout ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={()=>setLogoutHCWDia(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={
+                            onLogout
+                        }>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

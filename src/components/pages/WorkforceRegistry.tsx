@@ -54,6 +54,7 @@ import {
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
+import {useSession} from "@/contexts/AuthProvider.tsx";
 
 interface WorkforceRegProps {
     onNavigate: (page: string) => void;
@@ -75,9 +76,7 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [cadres, setCadres] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    // const [available, setAvailable] = useState<number>(0);
-    // const [unemployed, setUnimployed] = useState<number>(0);
-    // const [deployed, setDeployed] = useState<number>(0);
+    const session = useSession();
     const [searchTerm, setSearchTerm] = useState("");
     const [filterOpen, setFilterOpen] = useState(false);
     const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -295,14 +294,6 @@ if (error)
         <Briefcase size={15} />,
         <XCircle size={15} />
     ];
-const formatInitials = (worker: any) => {
-    const names = [
-        ...(worker.first_name ? String(worker.first_name).split(/\s+/) : []),
-        ...(worker.last_name ? String(worker.last_name).split(/\s+/) : []),
-    ];
-    const initials = names.map((n: string) => n[0]).filter(Boolean).join(" ");
-    return `${initials}`.trim();
-};
 
     function SortHeader({
                             label,
@@ -384,7 +375,7 @@ return (
 
         {!loading && (
             <>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-1 md:hidden">
+                <div className="grid grid-cols-6 md:grid-cols-6 gap-1 md:hidden">
                     {[
                         stats.total,
                         stats.deployed,
@@ -393,9 +384,9 @@ return (
                         stats.employed,
                         stats.unemployed
                     ].map((value, i) => (
-                        <div key={i} className="bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-1 col-span-3  md:col-span-1 lg:col-span-2">
+                        <div key={i} className="bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-2 col-span-3  md:col-span-1 lg:col-span-2">
                             <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-4">
-                                <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-lg">{[value][0]}</span>
+                                <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-md">{[value][0]}</span>
                             </p>
                         </div>
                     ))}
@@ -412,14 +403,14 @@ return (
                                 stats.unemployed,
                             ].map((value, i) => (
                                 <div key={i} className="bg-gray-100  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
-                                    <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center justify-between gap-1">
-                                        <span className="flex flex-row items-center gap-2 justify-start">{statsIcons[i] ?? <Circle size={15} />}{["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-lg"> {[value][0]}</span>
+                                    <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center justify-between gap-1 mx-2">
+                                        <span className="flex flex-row items-center gap-2 justify-start">{statsIcons[i] ?? <Circle size={15} />}{["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-md"> {[value][0]}</span>
                                     </p>
                                 </div>
                             ))}
                         </div>
                         <div className="grid grid-cols-12 gap-1 md:gap-2">
-                            <div className="relative sm:col-span-12 md:col-span-7 col-span-12">
+                            <div className="relative sm:col-span-12 md:col-span-6 lg:col-span-7 col-span-12">
 
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                                 <input type="text"
@@ -430,7 +421,7 @@ return (
                                 />
                             </div>
 
-                            <div className="col-span-12 sm:col-span-12 md:col-span-5 flex flex-row justify-start gap-1 lg:gap-2">
+                            <div className="col-span-12 sm:col-span-12 md:col-span-6 lg:col-span-5 flex flex-row justify-start items-center gap-1 lg:gap-2">
                                 <Popover open={filterOpen} onOpenChange={setFilterOpen}>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
@@ -593,7 +584,7 @@ return (
                                     className={`ml - 2`}
                                 >
                                     <Trash2 className="w-4 h-4" />
-                                    Delete ({selectedWorkerIds.length})
+                                    ({selectedWorkerIds.length})
                                 </Button>
                             </div>
 
@@ -613,9 +604,9 @@ return (
                                             "Cadre",
                                             "Role",
                                             "District",
+                                            "Competencies",
                                             "Status",
                                             "Certifications",
-                                            "Competencies",
                                             "Actions",
                                         ].map((h) => (
                                             <TableHead
@@ -648,7 +639,7 @@ return (
                                 <TableBody>
                                     {sortedWorkers.map((worker, index) => (
                                         <TableRow key={worker.id} className="hover:bg-neutral-50">
-                                            <TableCell className="px-3 py-1 text-xs whitespace-nowrap gap-1 flex flex-row items-center"Reloa>
+                                            <TableCell className="px-3 py-1 text-xs whitespace-nowrap gap-1 flex flex-row items-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedWorkerIds.includes(worker.id)}
@@ -677,6 +668,20 @@ return (
                                                 {worker.metadata.district ?? "—"}
                                             </TableCell>
 
+                                            <TableCell className="px-2 py-1 text-xs">
+                                                <div className="flex flex-wrap gap-1 max-h-6 overflow-y-scroll">
+                                                    {Array.isArray(worker.metadata?.competencies) &&
+                                                        worker.metadata.competencies.map((c: string, i: number) => (
+                                                            <span
+                                                                key={i}
+                                                                className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded-md text-xs"
+                                                            >
+                  {c}
+                </span>
+                                                        ))}
+                                                </div>
+                                            </TableCell>
+
                                             <TableCell className="px-3 py-1 text-xs">
           <span
               className={` px-2 py-1 inline-flex rounded-full text-xs font-medium ${
@@ -692,23 +697,8 @@ return (
             {worker.metadata.worker_status[1] ?? "—"}
           </span>
                                             </TableCell>
-
                                             <TableCell className="px-3 py-1 text-xs">
                                                 {worker.qualifications ?? "—"}
-                                            </TableCell>
-
-                                            <TableCell className="px-2 py-1 text-xs">
-                                                <div className="flex flex-wrap gap-1 max-h-6 overflow-y-scroll">
-                                                    {Array.isArray(worker.metadata?.competencies) &&
-                                                        worker.metadata.competencies.map((c: string, i: number) => (
-                                                            <span
-                                                                key={i}
-                                                                className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded-md text-xs"
-                                                            >
-                  {c}
-                </span>
-                                                        ))}
-                                                </div>
                                             </TableCell>
 
                                             <TableCell className="px-3 py-1 text-xs bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
@@ -840,6 +830,17 @@ return (
                             if (error) {
                                 toast.error("Error deleting selected Healthcare workers");
                             }
+                            await api.sendNotification(
+                                session.user.id,
+                                {
+                                    title: "Healthcare Workers Removed",
+                                    message: "Healthcare workers have been deleted.",
+                                    type: "success",
+                                    metadata: {
+                                        user: session.user
+                                    }
+                                }
+                            )
 
                             setDeleteHCWDia(false);
                             setSelectedWorkerIds([]);

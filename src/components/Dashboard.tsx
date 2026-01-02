@@ -17,6 +17,7 @@ import {AddWorker} from "@/components/pages/AddHCW.tsx";
 import AddHealthyFacility from "@/components/pages/AddHealthFacility.tsx";
 import OutbreakForm from "@/components/pages/OutbreakForm.tsx";
 import {DeploymentMap} from "@/components/DeploymentMap.tsx";
+import {LoginPage} from "@/components/LoginPage.tsx";
 interface DashboardProps {
   onLogout: () => void;
 }
@@ -52,6 +53,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
             return <OutbreakForm onSuccess={undefined} />;
       case 'competency':
         return <CompetencyTracking />;
+        case 'login':
+            return <LoginPage onLogin={()=>null} />
       case 'settings':
         return <Settings />;
       case 'worker profile':

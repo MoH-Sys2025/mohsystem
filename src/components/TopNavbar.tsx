@@ -1,8 +1,23 @@
-import { Search, Bell } from "lucide-react";
+import {Search, Bell, Badge} from "lucide-react";
 import { UserProfileHeader } from "@/components/ProfileHeader";
 import {Input} from "@/components/ui/input.tsx";
+import {Button} from "@/components/ui/button.tsx";
+import {api} from "@/supabase/Functions.tsx";
+import {useEffect, useState} from "react";
 
 export function TopNavbar() {
+    const [notifications, setNotifications] = useState(0)
+    const [count, setCount] = useState(0);
+
+    useEffect(() => {
+        async function fetchNotifications(){
+            const notificate = await api.getNotifications(1000)
+            setNotifications(notificate)
+            setCount(notificate.length)
+        }
+
+        fetchNotifications()
+    }, []);
     return (
         <header className="bg-white border-b border-neutral-200 px-4 md:px-6 h-16 flex items-center justify-between">
 
@@ -22,16 +37,16 @@ export function TopNavbar() {
             <div className="flex items-center gap-3 ml-3 flex-shrink-0">
 
                 {/* Notification */}
-                <button className="relative p-2 text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors">
+                <Button variant="ghost" className="relative p-2 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors">
                     <Bell className="w-5 h-5" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
+                    <div className="-top-1 absolute right-1 w-5 h-5 border-none bg-green-200  text-green-700 rounded-full text-sm">{count}</div>
+                </Button>
 
                 {/* Divider */}
                 <div className="w-px h-6 bg-neutral-200"></div>
 
                 {/* Profile — always visible */}
-                <UserProfileHeader name="Admin Person" role="Developer" image={undefined} />
+                <UserProfileHeader name="Administrator" role="Developer" image={undefined} />
             </div>
         </header>
     );

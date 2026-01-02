@@ -6,22 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
-export function getAuthHeaders() {
-    const session = localStorage.getItem('mors_session');
-    if (!session) {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.SUPABASE_KEY}`,
-        };
-    }
-
-    const { access_token } = JSON.parse(session);
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    };
-}
+import {useSession} from "@/contexts/AuthProvider.tsx";
 
 // API helper functions
 export const api = {
@@ -33,7 +18,36 @@ export const api = {
         })
         return response;
     },
+    async sendNotification(
+        userId: string,
+        notifData?: Partial<{
+            title: string;
+            message: string;
+            type: string;
+            metadata: Record<string, any>;
+        }>
+    ) {
+        const payload = {
+            user_id: userId ,
+            title: notifData?.title ?? "Title",
+            message: notifData?.message ?? "Message notification",
+            type: notifData?.type ?? "Type",
+            metadata: notifData?.metadata ?? {},
+            is_read: false,
+        };
 
+        const { data, error } = await supabase.functions.invoke(
+            "send_notification",
+            { body: payload }
+        );
+
+        if (error) {
+            toast.error(error.message || "Failed to send notification");
+            throw error;
+        }
+        console.log(data)
+        return data;
+    },
     async createPersonnel(payload: { first_name: string; last_name: string; other_names: string; gender: string; date_of_birth: string; phone: string; email: string; cadre_id: string; current_district_id: string; employment_status: string; hire_date: string; exit_date: string; metadata: { district: string; competencies: never[]; age: string; worker_status: string[]; }; qualifications: never[]; }) {
         const { data, error } = await supabase
             .from("personnel")
@@ -278,7 +292,7 @@ export const api = {
             .select("*")
             .order("id", { ascending: true })
             .limit(limit);
-        if (error) toast.error("There was an rror while getting notifications");
+        if (error) toast.error("There was an error while getting notifications");
         return data;
     },
 
@@ -926,4 +940,16 @@ export function useElementSize<T extends HTMLElement>() {
     }, []);
 
     return { ref, size };
+}
+
+export async function getAuthHeaders() {
+    const { data } = await supabase.auth.getSession();
+
+    return {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${
+            data.session?.access_token ??
+            import.meta.env.VITE_SUPABASE_ANON_KEY
+        }`,
+    };
 }

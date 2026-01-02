@@ -10,6 +10,7 @@ import {useEffect, useState} from "react";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {api} from "@/supabase/Functions.tsx";
 import {StartCard2} from "@/components/StartCard2.tsx";
+import {AlertPopup} from "@/components/NotificationsAlerts.tsx";
 
 interface DashboardProps {
     onNavigate?: (page: string) => void;
@@ -124,7 +125,6 @@ export function DashboardHome({onNavigate}: DashboardProps) {
               </div>
           </div>
       </div>
-        {/*<ActivityFeed className={isMapMaximized ? 'hidden' : 'block'} />*/}
     </div>
   );
 }

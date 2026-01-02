@@ -36,6 +36,8 @@ import {
     TableHead,
     TableHeader,
     TableRow,} from "@/components/ui/table";
+import {showAlert} from "@/components/NotificationsAlerts.tsx";
+import {useSession} from "@/contexts/AuthProvider.tsx";
 
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
@@ -43,7 +45,7 @@ export default function ExcelUploader() {
     const [uploaded, setUploaded] = useState(false);
     const [step, setStep] = useState(1);
     const [competencies, setCompetencies] = useState({});
-
+    const session = useSession();
     const { ref, size } = useElementSize<HTMLDivElement>();
     const contentWidth = size.width - size.paddingLeft - size.paddingRight;
 
@@ -84,12 +86,14 @@ export default function ExcelUploader() {
         setRows((prev) => prev.filter((_, i) => !selectedRows.includes(i)));
         setSelectedRows([]);
         toast.success(`${selectedRows[selectedRows.length-1]} Selected rows deleted`);
+
     };
 
     // ------------------------------------------------------------
     // LOAD LOOKUPS
     // ------------------------------------------------------------
     useEffect(() => {
+
         const loadLookups = async () => {
             const { data: d } = await supabase
                 .from("administrative_regions")
@@ -190,7 +194,17 @@ export default function ExcelUploader() {
             }
 
             toast.success("✅ Personnel successfully uploaded!");
-
+            await api.sendNotification(
+                session.user.id,
+                {
+                    title: "Healthcare Workers Registration",
+                    message: rows.length + " have successfully been registered",
+                    type: "Registration",
+                    metadata: {
+                        email: session.user.email
+                    }
+                }
+            )
         } catch (err) {
             console.error(err);
             toast.error("⚠️ Unexpected error occurred.");
