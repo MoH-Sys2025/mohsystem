@@ -709,7 +709,7 @@ return (
                                                         </Button>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="p-2 bg-white shadow-md border border-gray-200 w-35 rounded-sm ml-auto z-99">
-                                                        <Button onClick={()=> {setDeleteHCWDia(true); setSelectedHCW(worker)}} variant="ghost" className="font-normal flex cursor-pointer items-center gap-2">
+                                                        <Button onClick={()=> {setDeleteHCWDia(true); setSelectedHCW(worker)}} variant="ghost" className="font-normal flex cursor-pointer w-full justify-start items-center gap-2">
                                                             <Trash2  className="w-4 h-4 text-red-600" /> Delete
                                                         </Button>
                                                         <Button

@@ -16,7 +16,7 @@ export default function NotificationListener() {
             .on(
                 "postgres_changes",
                 {
-                    event: "DELETE",
+                    event: "INSERT",
                     schema: "public",
                     table: "notifications",
                 },
