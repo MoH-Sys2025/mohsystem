@@ -7,10 +7,11 @@ import {api} from "@/supabase/Functions.tsx";
 import {toast} from "sonner";
 
 interface LoginPageProps {
-  onLogin: () => void;
+    onLogin: () => void;
+    onCreateAccount: () => void;
 }
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -126,10 +127,22 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 support@health.gov.mw
               </a>
             </p>
+              <div className="mt-2 text-center">
+                  <p className="text-sm text-neutral-500">
+                      Don’t have an account?{" "}
+                      <button
+                          type="button"
+                          onClick={onCreateAccount}
+                          className="text-neutral-900 font-semibold hover:underline"
+                      >
+                          Create account
+                      </button>
+                  </p>
+              </div>
           </div>
         </div>
 
-        <p className="text-sm text-neutral-500 text-center mt-5">
+          <p className="text-sm text-neutral-500 text-center mt-5">
           Ministry of Health, Malawi · Outbreak Response Division
         </p>
       </div>

@@ -8,6 +8,14 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {useSession} from "@/contexts/AuthProvider.tsx";
 
+interface SignUpParams {
+    full_name: string;
+    email: string;
+    phone: string;
+    password: string;
+    role: string;
+    otp: string;
+}
 // API helper functions
 export const api = {
 
@@ -18,7 +26,72 @@ export const api = {
         })
         return response;
     },
-    async sendNotification(
+
+    async signupWithOtpCheck(params: SignUpParams) {
+        const { full_name, email, phone, password, role, otp } = params;
+
+        // STEP 1: Validate OTP (DB does the work)
+        const { data: otpRow, error: otpError } = await supabase
+            .from("otp_codes")
+            .select("id")
+            .eq("code", otp)
+            .eq("consumed", false)
+            .gt("expires_at", new Date().toISOString())
+            .single();
+
+        if (otpError || !otpRow) {
+            toast.error(
+                otpError?.code === "PGRST116"
+                    ? "Session expired. Please request a new OTP from administrator_00."
+                    : "The OTP code entered is invalid."
+            );
+            return { error: otpError ?? new Error("Invalid OTP") };
+        }
+
+        // STEP 2: Create auth user
+        const { data: userData, error: signUpError } =
+            await supabase.auth.signUp({
+                email,
+                password,
+            });
+
+        if (signUpError) {
+            toast.error(signUpError.message || "Sign up failed.");
+            return { error: signUpError };
+        }
+
+        // STEP 3: Insert profile
+        const { error: profileError } = await supabase
+            .from("profiles")
+            .insert([
+                {
+                    id: userData.user?.id,
+                    full_name,
+                    email,
+                    phone,
+                    role,
+                },
+            ]);
+
+        if (profileError) {
+            toast.error("Failed to save user profile.");
+            return { error: profileError };
+        }
+
+        // STEP 4: Consume OTP
+        await supabase
+            .from("otp_codes")
+            .update({
+                consumed: true,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", otpRow.id);
+
+        toast.success("Account created successfully!");
+        return { data: userData };
+    },
+
+async sendNotification(
         userId: string,
         notifData?: Partial<{
             title: string;
@@ -642,6 +715,15 @@ export function getAge(dob: string) {
     }
 
     return age;
+}
+export function getTimeFromISO(timestamp: string): string {
+    if (!timestamp) return "";
+
+    return new Date(timestamp).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    });
 }
 
 export function formatDate(dateString: string) {

@@ -19,6 +19,8 @@ import { supabase } from "@/supabase/supabase";
 import { api } from "@/supabase/Functions";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {showAlert} from "@/components/NotificationsAlerts.tsx";
+import {useSession} from "@/contexts/AuthProvider.tsx";
 
 /**
  * Deployment form:
@@ -58,7 +60,12 @@ async function loadCachedDeployId() {
         .single();   // because there's only one row
 
     if (error) {
-        toast.error("Failed loading deployments indexes")
+        showAlert({
+            title: "Deployment failed",
+            description: "Failed loading deployments indexes",
+            type: "error",
+            duration: 7000,
+        })
     }
     return (["DEP-" + (new Date().getFullYear()) + "-" + formatNumber(data?.last_number), data?.last_number])
 }
@@ -102,7 +109,7 @@ const DeploymentContext = createContext<DeploymentContextType>({
 export default function NewDeploymentForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
     // provide shared selection state to both panels
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
+    const session = useSession()
     return (
         <DeploymentContext.Provider value={{ selectedIds, setSelectedIds }}>
             <div className="grid grid-cols-1 md:grid-cols-12 bg-white lg:p-0 md:p-4 p-2 lg:border-b">
@@ -187,7 +194,12 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
 
     async function onSubmit(values: LeftFormValues) {
         if (!selectedIds || selectedIds.length === 0) {
-            toast.error("Select at least one health worker from the right table");
+            showAlert({
+                title: "Error",
+                description: "Select at least one health worker from the right table",
+                type: "error",
+                duration: 7000,
+            })
             return;
         }
 
@@ -214,7 +226,12 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
 
         if (error) {
             console.error(error);
-            toast.error("Failed to create deployments: " + error.message);
+            showAlert({
+                title: "Deployment failed",
+                description: "Failed to create deployment, please try again.",
+                type: "error",
+                duration: 7000,
+            })
             setLoading(false);
             return;
         }
@@ -227,14 +244,40 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
         });
 
         if (error2) {
-            toast.error("Failed to update personnel: " + (error2.message ?? String(error2)));
+            showAlert({
+                title: "Update failed",
+                description: "Failed to update personnel.",
+                type: "error",
+                duration: 7000,
+            })
         } else {
-            toast.success("Workers updated to Pending");
+            api.sendNotification(
+                session.user.id,
+                {
+                    title: "Deployment Successful",
+                    message: "Healthcare workers successfully deployed",
+                    type: "success",
+                    metadata: {
+                        user: session.user,
+                        activity: ""
+                    }
+                }
+            )
+            showAlert({
+                title: "Deployment Successful",
+                description: "Healthcare workers successfully deployed",
+                type: "success",
+                duration: 7000,
+            })
         }
 
         setLoading(false);
-
-        toast.success(`Created ${data.length} deployment(s). Personnel status updated.`);
+        showAlert({
+            title: "Deployment Successful",
+            description: `Created ${data.length} deployment(s). Personnel status updated.`,
+            type: "success",
+            duration: 7000,
+        })
         onSuccess?.(data);
 
         // Clear right-panel selection via context

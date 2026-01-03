@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import {api} from "@/supabase/Functions.tsx";
 import {useState} from "react";
+import {supabase} from "@/supabase/supabase.ts";
 
 interface SidebarProps {
     currentPage: string;
@@ -153,7 +154,11 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={()=>setLogoutHCWDia(false)}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={
-                            onLogout
+                            async ()=>{
+                                const { error } = await supabase.auth.signOut()
+                                if(error === null)
+                                    onLogout()
+                            }
                         }>Continue</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
