@@ -283,12 +283,12 @@ export function WorkforceChart() {
             </div>
 
             {/* Chart with sticky panel */}
-            <div className="h-80">
-                <div className="grid grid-cols-[280px_1fr] gap-4 h-full">
+            <div className="md:h-80">
+                <div className="flex flex-col md:grid md:grid-cols-[280px_1fr] gap-4 h-full">
                     {/* Sticky panel */}
-                    <div className="relative">
+                    <div className="md:relative">
                         {panel.visible && (
-                            <div className="sticky top-6 h-fit rounded-xl border bg-white p-4 shadow-sm">
+                            <div className="md:sticky md:top-6 h-fit rounded-xl border bg-white p-4 shadow-sm">
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
                                         <h3 className="font-medium text-sm">
@@ -334,7 +334,7 @@ export function WorkforceChart() {
                             </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data} barCategoryGap="14%" barGap={2}>
+                                <BarChart data={data} barCategoryGap="14%" barGap={2} className="">
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} />
                                     <YAxis tickLine={false} axisLine={false} fontSize={12} />

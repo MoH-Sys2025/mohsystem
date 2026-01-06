@@ -119,7 +119,6 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
         }
     };
 
-
     const HEADER_TO_SORT_KEY: Record<string, string | null> = {
         "Worker ID": "id",
         "Name": "name",
@@ -387,7 +386,7 @@ return (
                         stats.unemployed
                     ].map((value, i) => (
                         <div key={i} className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-1 bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-2 col-span-3  md:col-span-1 lg:col-span-2">
-                            <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-md">{[value][0]}</span>
+                            <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Total HCW", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]}</span> <span className="text-black text-md">{[value][0]}</span>
                         </div>
                     ))}
                 </div>
@@ -404,7 +403,7 @@ return (
                             ].map((value, i) => (
                                 <div key={i} className="bg-gray-100  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
                                     <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center justify-between gap-1 mx-2">
-                                        <span className="flex flex-row items-center gap-2 justify-start">{statsIcons[i] ?? <Circle size={15} />}{["Total Workers", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]} :</span> <span className="text-black text-md"> {[value][0]}</span>
+                                        <span className="flex flex-row items-center gap-2 justify-start">{statsIcons[i] ?? <Circle size={15} />}{["Total HCW", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]}</span> <span className="text-black text-md"> {[value][0]}</span>
                                     </p>
                                 </div>
                             ))}
@@ -613,7 +612,7 @@ return (
                                                 key={h}
                                                 className={`text-xs uppercase tracking-wider px-3 py-2 text-left
                                                 ${[""].includes(h) ? "hidden md:table-cell" : ""}
-                                                ${h === "Actions" ? "bg-neutral-50" : ""}
+                                                ${h === "Actions" ? "sticky right-0 z-20 bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]" : ""}
                                               `}
                                                 style={{ minWidth: h === "Name" ? 100 : 60 }}>
                                                 {HEADER_TO_SORT_KEY[h] ? (
@@ -640,8 +639,9 @@ return (
                                     {sortedWorkers.map((worker, index) => (
                                         <TableRow key={worker.id} className="hover:bg-neutral-50">
                                             <TableCell className="px-3 py-1 text-xs whitespace-nowrap gap-1 flex flex-row items-center">
-                                                <input
+                                                <Input
                                                     type="checkbox"
+                                                    className="scale-[0.6]"
                                                     checked={selectedWorkerIds.includes(worker.id)}
                                                     onChange={() => toggleWorkerSelection(worker.id)}
                                                 />
@@ -701,14 +701,14 @@ return (
                                                 {worker.qualifications ?? "—"}
                                             </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
+                                            <TableCell className=" sticky right-0 z-10 px-3 py-1 text-xs bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
                                                 <Popover>
                                                     <PopoverTrigger asChild placement="top">
                                                         <Button variant="outline" className="p-1.5 hover:bg-neutral-100 rounded-md">
                                                             <MoreVertical className="w-4 h-4 text-neutral-600" />
                                                         </Button>
                                                     </PopoverTrigger>
-                                                    <PopoverContent className="p-2 bg-white shadow-md border border-gray-200 w-35 rounded-sm ml-auto z-99">
+                                                    <PopoverContent className="p-2 z-11 mr-26 bg-white shadow-md border border-gray-200 w-35 rounded-sm ml-auto">
                                                         <Button onClick={()=> {setDeleteHCWDia(true); setSelectedHCW(worker)}} variant="ghost" className="font-normal flex cursor-pointer w-full justify-start items-center gap-2">
                                                             <Trash2  className="w-4 h-4 text-red-600" /> Delete
                                                         </Button>
