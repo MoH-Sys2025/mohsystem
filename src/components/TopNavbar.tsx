@@ -15,25 +15,41 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import {toast} from "sonner";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert.tsx";
+import {useSession} from "@/contexts/AuthProvider.tsx";
+import type {User} from "@supabase/supabase-js";
 
 export function TopNavbar() {
-    const [notifications, setNotifications] = useState([])
+    const [notifications, setNotifications] = useState([]);
     const [count, setCount] = useState(0);
-    const [openDialog, setOpenDialog] = useState(false)
+    const [openDialog, setOpenDialog] = useState(false);
+    const [thisUser, setThisUser] = useState<Partial<User>>({});
+    const session = useSession();
 
     useEffect(() => {
-        async function fetchNotifications(){
-            const [notificate] = await Promise.all([api.getNotifications(1000)])
-            const unread = notificate.filter(n => !n.is_read)
-            setNotifications(unread)
-            setCount(unread.length)
+        async function fetchTopNavData() {
+            if (!session?.user) return;
+
+            try {
+                const [notificate, userData] = await Promise.all([
+                    api.getNotifications(1000),
+                    api.getUser(session.user.id)
+                ]);
+
+                const unread = notificate.filter(n => !n.is_read);
+                setNotifications(unread);
+                setCount(unread.length);
+                setThisUser(userData.data[0]);
+
+            } catch (error) {
+                console.error("Failed to fetch TopNavbar data:", error);
+            }
         }
 
-        fetchNotifications()
-    }, []);
+        fetchTopNavData();
+    }, [session]); // ✅ dependency on session, will rerun when session becomes available
+
     return (
         <header className="bg-white border-b border-neutral-200 px-4 md:px-6 h-16 flex items-center justify-between">
-
             {/* LEFT — SEARCH BAR */}
             <div className="flex-1 max-w-full md:max-w-xl">
                 <div className="relative">
@@ -41,44 +57,60 @@ export function TopNavbar() {
                     <Input
                         type="text"
                         placeholder="Search healthcare workers, documents, deployments..."
-                        className=" w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
                 </div>
             </div>
 
             {/* RIGHT — NOTIFICATIONS + PROFILE */}
             <div className="flex items-center gap-3 ml-3 flex-shrink-0">
-
                 {/* Notification */}
-                <Button variant="ghost" onClick={()=>setOpenDialog(true)} className="relative p-2 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors">
+                <Button
+                    variant="ghost"
+                    onClick={() => setOpenDialog(true)}
+                    className="relative p-2 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
+                >
                     <Bell className="w-5 h-5" />
-                    <div className="-top-1 absolute right-1 w-5 h-5 border-none bg-green-200  text-green-700 rounded-full text-sm">{count}</div>
+                    {count > 0 && (
+                        <div className="-top-1 absolute right-1 w-5 h-5 border-none bg-green-200 text-green-700 rounded-full text-sm flex items-center justify-center">
+                            {count}
+                        </div>
+                    )}
                 </Button>
 
-                {/* Divider */}
                 <div className="w-px h-6 bg-neutral-200"></div>
 
-                {/* Profile — always visible */}
-                <UserProfileHeader name="Administrator" role="Developer" image={undefined} />
+                <UserProfileHeader
+                    name={thisUser?.full_name ?? "Administrator"}
+                    role={thisUser?.role ?? "Admin"}
+                    image={undefined}
+                />
+
                 <AlertDialog open={openDialog}>
                     <AlertDialogContent className="md:p-5 p-3 pt-5 lg:w-7/12 md:w-8/12 w-11/12">
-                        <AlertDialogHeader className="">
-                            <AlertDialogTitle className="text-md">MOERS NOTIFICATIONS ?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-sm ">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="text-md">
+                                MOERS NOTIFICATIONS
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm">
                                 Unread notifications.
                                 <div className="overflow-y-auto w-full">
                                     <div className="md:max-h-[70vh] max-h-[68vh] flex flex-col justify-start items-center">
-                                        {notifications.map((notifs, index)=>(
+                                        {notifications.map((notifs, index) => (
                                             <Alert key={index} className="border-none">
                                                 <MessageCircleReply />
                                                 <div className="flex-1 items-center">
                                                     <AlertTitle className="flex items-center gap-2 justify-between font-semibold text-gray-800">
                                                         {notifs.title}
-                                                        <span  className="text-xs px-2 py-0.5 flex flex-row items-center gap-3">
-                                                        <span className="bg-green-200 border-green-200 border-1 text-green-800 px-2 rounded-sm">Unread  </span> <span className="text-gray-500 text-xs">{getTimeFromISO(notifs.created_at)}</span>
-                                                    </span>
+                                                        <span className="text-xs px-2 py-0.5 flex flex-row items-center gap-3">
+                                                            <span className="bg-green-200 border-green-200 border-1 text-green-800 px-2 rounded-sm">
+                                                                Unread
+                                                            </span>
+                                                            <span className="text-gray-500 text-xs">
+                                                                {getTimeFromISO(notifs.created_at)}
+                                                            </span>
+                                                        </span>
                                                     </AlertTitle>
-
                                                     <AlertDescription className="mt-1">
                                                         {notifs.message}
                                                     </AlertDescription>
@@ -90,7 +122,12 @@ export function TopNavbar() {
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogAction className="text-xs px-2" onClick={()=>setOpenDialog(false)}>Close</AlertDialogAction>
+                            <AlertDialogAction
+                                className="text-xs px-2"
+                                onClick={() => setOpenDialog(false)}
+                            >
+                                Close
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -98,3 +135,4 @@ export function TopNavbar() {
         </header>
     );
 }
+

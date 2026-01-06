@@ -286,42 +286,101 @@ export default function ExcelUploader() {
         e.target.value = "";
     };
 
+    const applyFacilityToAll = (facility) => {
+        // update visual selection
+        const allSelected = {};
+        rows.forEach((_, i) => {
+            allSelected[i] = facility;
+        });
+        setSelectedFacility(allSelected);
+
+        // update row data
+        setRows((prev) =>
+            prev.map((row) => ({
+                ...row,
+                current_facility_id: facility.id,
+                facility_name: facility.facility_name,
+            }))
+        );
+
+        toast.success(`Facility "${facility.facility_name}" applied to all rows`);
+    };
+
+
     // ------------------------------------------------------------
     // FACILITY SELECTOR COMPONENT
     // ------------------------------------------------------------
     const FacilitySelector = ({ index }) => {
-        const districtName = rows[index]?.district;
+        const [open, setOpen] = useState(false);
+
+        /**
+         * Determine district safely:
+         * - If index is null → GLOBAL selector
+         * - If index is a number → ROW selector
+         *
+         * We derive district from the FIRST row for global,
+         * assuming all rows are from the same district.
+         */
+        const districtName =
+            index === null
+                ? rows[0]?.district
+                : rows[index]?.district;
+
         const facilityOptions = getFacilitiesByDistrictName(districtName);
 
+        // Button label
+        const label =
+            index === null
+                ? "Select Facility for ALL"
+                : selectedFacility[index]?.facility_name || "Select Facility";
+
         return (
-            <Popover>
+            <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                    <Button size="xs" variant="outline" className="text-[11px] p-1 px-2">
-                        {selectedFacility[index]?.facility_name || "Select Facility"}
+                    <Button
+                        size="xs"
+                        variant="outline"
+                        className="text-[11px] p-1 px-2"
+                    >
+                        {label}
                     </Button>
                 </PopoverTrigger>
 
                 <PopoverContent className="w-60 max-h-64 overflow-y-auto p-2">
                     <Command>
                         <CommandInput placeholder="Search facility..." />
-
                         <CommandEmpty>No facilities found.</CommandEmpty>
 
                         <CommandGroup>
                             {facilityOptions.map((f) => (
                                 <CommandItem
                                     key={f.id}
+                                    value={f.facility_name} // 👈 REQUIRED (prevents revert)
                                     onSelect={() => {
-                                        setSelectedFacility((prev) => ({
-                                            ...prev,
-                                            [index]: f,
-                                        }));
+                                        if (index === null) {
+                                            // 🌍 APPLY TO ALL
+                                            applyFacilityToAll(f);
+                                        } else {
+                                            // 📄 APPLY TO SINGLE ROW
+                                            setSelectedFacility((prev) => ({
+                                                ...prev,
+                                                [index]: f,
+                                            }));
 
-                                        // also update the row's facility id if needed
-                                        // updateRow(index, "current_facility_id", f.id);
+                                            updateRow(index, "current_facility_id", f.id);
+                                            updateRow(index, "facility_name", f.facility_name);
+                                        }
+
+                                        setOpen(false); // 👈 CRITICAL: prevents auto reselect
                                     }}
                                 >
                                     {f.facility_name}
+
+                                    {index === null && (
+                                        <span className="ml-auto text-xs text-blue-600">
+                                        Apply to all
+                                    </span>
+                                    )}
                                 </CommandItem>
                             ))}
                         </CommandGroup>
@@ -330,6 +389,8 @@ export default function ExcelUploader() {
             </Popover>
         );
     };
+
+
 
     // ------------------------------------------------------------
     // FILTERED ROWS (apply search + column filters)
@@ -553,7 +614,9 @@ export default function ExcelUploader() {
                                        <TableRow className="bg-gray-100 top-0 z-10">
                                            <TableHead className="border p-2 w-50">Full Name</TableHead>
                                            <TableHead className="border p-2 w-80">Position</TableHead>
-                                           <TableHead className="border p-2">Facility</TableHead>
+                                           <TableHead className="border p-2">
+                                               Facility <FacilitySelector index={null} />
+                                           </TableHead>
                                            <TableHead className="border p-2">Competencies</TableHead>
                                        </TableRow>
                                    </TableHeader>

@@ -593,6 +593,15 @@ async sendNotification(
             change: total - previous,
         };
     },
+    async getUser(id: string){
+        const result = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", id);
+
+        return (result);
+
+    },
     async softDeleteHCWs(workerIds: string[]) {
         return supabase
             .from("personnel")

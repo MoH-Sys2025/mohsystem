@@ -75,7 +75,6 @@ export function DeploymentMap({ maximized, onToggleMaximize }: DeploymentMapProp
 
         const workers = workforceByDistrict[district] ?? [];
 
-        console.log(workers)
         switch (displayMode) {
             case "HCW: All":
                 return workers.length;

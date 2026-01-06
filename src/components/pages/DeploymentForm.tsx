@@ -14,6 +14,16 @@ import {
     SelectItem,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { supabase } from "@/supabase/supabase";
 import { api } from "@/supabase/Functions";
@@ -21,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {showAlert} from "@/components/NotificationsAlerts.tsx";
 import {useSession} from "@/contexts/AuthProvider.tsx";
+import {ChevronDown, Loader, Loader2} from "lucide-react";
 
 /**
  * Deployment form:
@@ -55,19 +66,21 @@ async function loadCachedOutbreaks() {
 
 async function loadCachedDeployId() {
     const { data, error } = await supabase
-        .from("deployments_id_counters")
+        .from("deployment_id_counters")
         .select("last_number")
-        .single();   // because there's only one row
+        .single();
 
-    if (error) {
+    if (error || !data?.last_number) {
         showAlert({
             title: "Deployment failed",
-            description: "Failed loading deployments indexes",
+            description: "Failed loading deployments indexes, defaulting to 0",
             type: "error",
             duration: 7000,
-        })
+        });
+        return [`DEP-${new Date().getFullYear()}-NNN`, 0]; // default fallback
     }
-    return (["DEP-" + (new Date().getFullYear()) + "-" + formatNumber(data?.last_number), data?.last_number])
+
+    return [`DEP-${new Date().getFullYear()}-${formatNumber(data.last_number)}`, data.last_number];
 }
 
 function formatNumber(num: number) {
@@ -76,9 +89,9 @@ function formatNumber(num: number) {
 
 async function insertDeploymentIndex(curIndex: number) {
     await supabase
-        .from("deployments_id_counters")
+        .from("deployment_id_counters")
         .update({ last_number: curIndex })
-        .eq("id", "5d7f9048-692b-400a-8689-74f938cb9ee4");
+        .eq("id", "a43e7293-48d8-4c88-a18a-c4013ddc92bb");
 
 }
 
@@ -100,18 +113,28 @@ async function loadCachedFacilities() {
 type DeploymentContextType = {
     selectedIds: string[];
     setSelectedIds: (ids: string[]) => void;
+    refreshKey: number;
+    triggerRefresh: () => void;
 };
+
 const DeploymentContext = createContext<DeploymentContextType>({
     selectedIds: [],
     setSelectedIds: () => {},
+    refreshKey: 0,
+    triggerRefresh: () => {},
 });
 
+
 export default function NewDeploymentForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
-    // provide shared selection state to both panels
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const session = useSession()
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const triggerRefresh = () => setRefreshKey((k) => k + 1);
+
     return (
-        <DeploymentContext.Provider value={{ selectedIds, setSelectedIds }}>
+        <DeploymentContext.Provider
+            value={{ selectedIds, setSelectedIds, refreshKey, triggerRefresh }}
+        >
             <div className="grid grid-cols-1 md:grid-cols-12 bg-white lg:p-0 md:p-4 p-2 lg:border-b">
                 <div className="lg:col-span-4 md:col-span-12 border-r lg:pb-6">
                     <LeftForm onSuccess={onSuccess} />
@@ -123,6 +146,7 @@ export default function NewDeploymentForm({ onSuccess }: { onSuccess?: (data?: a
         </DeploymentContext.Provider>
     );
 }
+
 
 /* ----------------------------- LEFT FORM ----------------------------- */
 
@@ -147,14 +171,15 @@ const leftFormSchema = z.object({
 
 type LeftFormValues = z.infer<typeof leftFormSchema>;
 
-function
-LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
-    const { selectedIds, setSelectedIds } = useContext(DeploymentContext);
+function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
+    const { selectedIds, setSelectedIds, triggerRefresh } =
+        useContext(DeploymentContext);
     const [deploy_id, setDeployId] = useState<any[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [districts, setDistricts] = useState<any[]>([]);
     const [facilities, setFacilities] = useState<any[]>([]);
     const [outbreaks, setOutbreaks] = useState<any[]>([]);
+    const session = useSession();
     const [personnelList, setPersonnelList] = useState<any[]>([]); // used for team lead only
 
     useEffect(() => {
@@ -170,8 +195,8 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             setDistricts([...d]);
             setFacilities([...f]);
             setOutbreaks([...o]);
-            setDeployId([...i])
             console.log(i)
+            setDeployId([...i])
         };
         load();
     }, []);
@@ -191,6 +216,17 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             notes: "",
         },
     });
+    const selectedDistrictId = form.watch("assigned_district_id");
+    const filteredFacilities = useMemo(() => {
+        if (!selectedDistrictId) return [];
+        return facilities.filter(
+            (f) => f.district_id === selectedDistrictId
+        );
+    }, [facilities, selectedDistrictId]);
+
+    useEffect(() => {
+        form.setValue("assigned_facility_id", null);
+    }, [selectedDistrictId, form]);
 
     async function onSubmit(values: LeftFormValues) {
         if (!selectedIds || selectedIds.length === 0) {
@@ -198,7 +234,7 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                 title: "Error",
                 description: "Select at least one health worker from the right table",
                 type: "error",
-                duration: 7000,
+                duration: 5000,
             })
             return;
         }
@@ -224,7 +260,7 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
         // Insert deployments
         const { data, error } = await supabase.from("deployments").insert(payloads).select();
 
-        if (error) {
+        if (error ) {
             console.error(error);
             showAlert({
                 title: "Deployment failed",
@@ -232,9 +268,9 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                 type: "error",
                 duration: 7000,
             })
-            setLoading(false);
             return;
         }
+        console.log(deploy_id[1])
         insertDeploymentIndex(deploy_id[1]+1)
         /* ---------------------------------------------------------
            UPDATE PERSONNEL worker_status[1] = "Pending"
@@ -243,6 +279,7 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             ids: selectedIds,
         });
 
+        setLoading(false);
         if (error2) {
             showAlert({
                 title: "Update failed",
@@ -250,6 +287,7 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                 type: "error",
                 duration: 7000,
             })
+            return
         } else {
             api.sendNotification(
                 session.user.id,
@@ -263,6 +301,7 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                     }
                 }
             )
+            triggerRefresh();
             showAlert({
                 title: "Deployment Successful",
                 description: "Healthcare workers successfully deployed",
@@ -436,6 +475,7 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                                 <FormLabel>Assigned facility</FormLabel>
                                 <FormControl>
                                     <Select
+                                        disabled={!selectedDistrictId}
                                         value={field.value ?? "none"}
                                         onValueChange={(v) => field.onChange(v === "none" ? null : v)}
                                     >
@@ -444,11 +484,12 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">No facility</SelectItem>
-                                            {facilities.map((f) => (
+                                            {filteredFacilities.map((f) => (
                                                 <SelectItem key={f.id} value={f.id}>
                                                     {f.facility_name ?? f.name}
                                                 </SelectItem>
                                             ))}
+
                                         </SelectContent>
                                     </Select>
                                 </FormControl>
@@ -487,39 +528,9 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                         )}
                     />
 
-                    {/* Role description */}
-                    {/*<FormField*/}
-                    {/*    control={form.control}*/}
-                    {/*    name="role_description"*/}
-                    {/*    render={({ field }) => (*/}
-                    {/*        <FormItem>*/}
-                    {/*            <FormLabel>Role description</FormLabel>*/}
-                    {/*            <FormControl>*/}
-                    {/*                <Textarea className="w-full" {...field} />*/}
-                    {/*            </FormControl>*/}
-                    {/*            <FormMessage />*/}
-                    {/*        </FormItem>*/}
-                    {/*    )}*/}
-                    {/*/>*/}
-
-                    {/* Notes */}
-                    {/*<FormField*/}
-                    {/*    control={form.control}*/}
-                    {/*    name="notes"*/}
-                    {/*    render={({ field }) => (*/}
-                    {/*        <FormItem>*/}
-                    {/*            <FormLabel>Notes</FormLabel>*/}
-                    {/*            <FormControl>*/}
-                    {/*                <Textarea className="w-full" {...field} />*/}
-                    {/*            </FormControl>*/}
-                    {/*            <FormMessage />*/}
-                    {/*        </FormItem>*/}
-                    {/*    )}*/}
-                    {/*/>*/}
-
                     <div className="flex gap-2">
-                        <Button className="w-full" disabled={loading} type="submit">
-                            {loading ? "Saving..." : "Create Deployment"}
+                        <Button className="w-full flex flex-row gap-2 items-center" disabled={loading} type="submit">
+                            {loading ? <><Loader2 className="animate-spin" /> Saving...</> : "Create Deployment"}
                         </Button>
                     </div>
                 </form>
@@ -530,6 +541,11 @@ LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
 
 /* ----------------------------- RIGHT PANEL ----------------------------- */
 function RightPersonnelPanel() {
+    type SortDir = "asc" | "desc" | null;
+
+    const [sortBy, setSortBy] = useState<"name" | "status" | null>(null);
+    const [sortDir, setSortDir] = useState<SortDir>(null);
+
     const { selectedIds, setSelectedIds } = useContext(DeploymentContext);
 
     const [allPersonnel, setAllPersonnel] = useState<any[]>([]);
@@ -539,6 +555,11 @@ function RightPersonnelPanel() {
     const [filterValue, setFilterValue] = useState("all");
     const [selectedRows, setSelectedRows] = useState(new Set<string>());
     const [selectAll, setSelectAll] = useState(false);
+
+    const SORT_FIELDS = {
+        name: (p: any) => `${p.first_name ?? ""} ${p.last_name ?? ""}`.toLowerCase(),
+        status: (p: any) => p.metadata?.worker_status?.[1] ?? "",
+    };
 
     useEffect(() => {
         const load = async () => {
@@ -599,13 +620,81 @@ function RightPersonnelPanel() {
     // filtered list after search + filter
     const filtered = useMemo(() => {
         const q = search?.trim().toLowerCase() || "";
-        return (allPersonnel || []).filter((p) => {
+
+        const base = (allPersonnel || []).filter((p) => {
             const full = `${p.first_name || ""} ${p.last_name || ""}`.toLowerCase();
             if (q && !full.includes(q)) return false;
             if (!matchesFilter(p)) return false;
             return true;
         });
-    }, [allPersonnel, search, filterType, filterValue]);
+
+        if (!sortBy || !sortDir) return base;
+
+        return [...base].sort((a, b) => {
+            const av = SORT_FIELDS[sortBy](a);
+            const bv = SORT_FIELDS[sortBy](b);
+            return sortDir === "asc"
+                ? av.localeCompare(bv)
+                : bv.localeCompare(av);
+        });
+    }, [allPersonnel, search, filterType, filterValue, sortBy, sortDir]);
+    function SortHeader({
+                            label,
+                            columnKey,
+                        }: {
+        label: string;
+        columnKey: "name" | "status";
+    }) {
+        return (
+            <div className="flex items-center justify-between gap-1">
+                <span>{label}</span>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 p-0 text-neutral-500"
+                        >
+                            <ChevronDown className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-28 p-1 bg-white shadow-md rounded-md">
+                        <Button
+                            variant="ghost"
+                            className="w-full justify-start text-xs"
+                            onClick={() => {
+                                setSortBy(columnKey);
+                                setSortDir("asc");
+                            }}
+                        >
+                            ↑ Ascending
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            className="w-full justify-start text-xs"
+                            onClick={() => {
+                                setSortBy(columnKey);
+                                setSortDir("desc");
+                            }}
+                        >
+                            ↓ Descending
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            className="w-full justify-start text-xs text-neutral-500"
+                            onClick={() => {
+                                setSortBy(null);
+                                setSortDir(null);
+                            }}
+                        >
+                            Clear
+                        </Button>
+                    </PopoverContent>
+                </Popover>
+            </div>
+        );
+    }
+
 
     // selection handlers
     const toggleRow = (id: string) => {
@@ -662,45 +751,77 @@ function RightPersonnelPanel() {
                         {filterType === "district" && districtOptions.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                <div className="flex items-center justify-end gap-3 w-full ml-auto text-right">
-                    <label className="text-sm flex items-center gap-2">
-                        <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
-                        <div className="text-xs w-full">Select all</div>
-                    </label>
-                </div>
             </div>
 
             <div className="border rounded-xl overflow-x-auto">
-                <table className="w-full overflow-x-scroll text-xs">
-                    <thead className="bg-neutral-100 text-xs font-semibold">
-                    <tr>
-                        <th className="p-2 text-left"></th>
-                        <th className="p-2 text-left">Full name</th>
-                        <th className="p-2 text-left">Status</th>
-                        <th className="p-2 text-left">Qualifications</th>
-                        <th className="p-2 text-left">Competencies</th>
-                    </tr>
-                    </thead>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-10">
+                                <input
+                                    type="checkbox"
+                                    checked={selectAll}
+                                    onChange={toggleSelectAll}
+                                />
+                            </TableHead>
 
-                    <tbody>
-                    {filtered.map((p) => {
-                        const status = p.metadata?.worker_status[1] ?? "—";
-                        const qualifications = Array.isArray(p.qualifications) ? p.qualifications : [];
-                        const competencies = Array.isArray(p.metadata?.competencies) ? p.metadata.competencies : [];
-                        return (
-                            <tr key={p.id} className="border-t hover:bg-neutral-50">
-                                <td className="p-2">
-                                    <input type="checkbox" checked={selectedRows.has(p.id)} onChange={() => toggleRow(p.id)} />
-                                </td>
-                                <td className="p-2">{`${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "—"}</td>
-                                <td className="p-2"><Badge className="text-[11px]" variant="outline">{status}</Badge></td>
-                                <td className="p-2">{qualifications.length > 0 ? qualifications.join(", ") : "—"}</td>
-                                <td className="p-2">{competencies.length > 0 ? competencies.join(", ") : "—"}</td>
-                            </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
+                            <TableHead>
+                                <SortHeader label="Full name" columnKey="name" />
+                            </TableHead>
+
+                            <TableHead>
+                                <SortHeader label="Status" columnKey="status" />
+                            </TableHead>
+
+                            <TableHead>Qualifications</TableHead>
+                            <TableHead>Competencies</TableHead>
+                        </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                        {filtered.map((p) => {
+                            const status = p.metadata?.worker_status?.[1] ?? "—";
+                            return (
+                                <TableRow key={p.id} className="hover:bg-neutral-50">
+                                    <TableCell>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedRows.has(p.id)}
+                                            onChange={() => toggleRow(p.id)}
+                                        />
+                                    </TableCell>
+
+                                    <TableCell className="font-medium">
+                                        {p.first_name} {p.last_name}
+                                    </TableCell>
+
+                                    <TableCell>
+            <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    status === "Deployed"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : status === "Available"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-neutral-100 text-neutral-700"
+                }`}
+            >
+              {status}
+            </span>
+                                    </TableCell>
+
+                                    <TableCell className="text-xs">
+                                        {(p.qualifications || []).join(", ") || "—"}
+                                    </TableCell>
+
+                                    <TableCell className="text-xs">
+                                        {(p.metadata?.competencies || []).join(", ") || "—"}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+
             </div>
         </div>
     );

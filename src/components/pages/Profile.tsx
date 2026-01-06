@@ -104,7 +104,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
                             <p className="text-neutral-500">{cadle}</p>
                             <p className="text-sm mb-4">{worker?.role}</p>
                             <div className="space-y-3 text-sm w-full text-left">
-                                <div className="flex items-center gap-2"><User size={16}/> {capitalize(worker?.gender)}, Age {age}</div>
+                                {/*<div className="flex items-center gap-2"><User size={16}/> {capitalize(worker?.gender)}, Age {age}</div>*/}
                                 <div className="flex items-center gap-2"><Phone size={16}/> {worker?.phone}</div>
                                 <div className="flex justify-start gap-4 flex-column">
                                     {linkedSystems.map((linkData, index) => (

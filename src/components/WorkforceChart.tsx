@@ -1,92 +1,378 @@
 import { useEffect, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { supabase } from "@/supabase/supabase.ts"; // adjust path if needed
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
+import { ChevronDown } from "lucide-react";
+
+import { supabase } from "@/supabase/supabase";
+import { Button } from "@/components/ui/button";
+import {
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+} from "@/components/ui/popover";
+
+type ChartData = {
+    month: string;
+    deployed: number;
+    available: number;
+};
 
 export function WorkforceChart() {
-    const [data, setData] = useState<{ month: string, deployed: number, available: number }[]>([]);
+    const months = [
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec"
+    ];
 
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonthIndex = today.getMonth();
+
+    const [year, setYear] = useState<number>(currentYear);
+    const [years, setYears] = useState<number[]>([]);
+    const [data, setData] = useState<ChartData[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    type PanelState = {
+        visible: boolean;
+        monthIndex: number;
+        type: "available" | "deployed";
+        loading: boolean;
+        personnel: any[];
+    };
+
+    const [panel, setPanel] = useState<PanelState>({
+        visible: true,
+        monthIndex: currentMonthIndex,
+        type: "available",
+        loading: true,
+        personnel: [],
+    });
+
+    /* ---------------- Fetch available years ---------------- */
     useEffect(() => {
-        const fetchData = async () => {
-            // 1️⃣ Fetch all personnel
-            const { data: personnelData, error: personnelError } = await supabase
-                .from("personnel")
-                .select("id, created_at");
-
-            if (personnelError) return console.error(personnelError);
-
-            const totalWorkers = personnelData?.length ?? 0;
-
-            // 2️⃣ Fetch active deployments
-            const { data: deploymentsData, error: deploymentsError } = await supabase
+        const fetchYears = async () => {
+            const { data, error } = await supabase
                 .from("deployments")
-                .select("deployment_id, created_at")
-                .eq("status", "Deployed");
+                .select("created_at");
 
-            if (deploymentsError) return console.error(deploymentsError);
+            if (error) {
+                console.error(error);
+                return;
+            }
 
-            // 3️⃣ Build monthly counts
-            const months = [
-                "Jan","Feb","Mar","Apr","May","Jun",
-                "Jul","Aug","Sep","Oct","Nov","Dec"
-            ];
+            const uniqueYears = Array.from(
+                new Set(data.map(d => new Date(d.created_at).getFullYear()))
+            ).sort((a, b) => b - a);
 
-            const deployedPerMonth: number[] = Array(12).fill(0);
+            if (uniqueYears.length) {
+                setYears(uniqueYears);
+                setYear(uniqueYears[0]);
+            }
+        };
 
-            deploymentsData?.forEach(dep => {
-                const date = new Date(dep.created_at);
-                const month = date.getUTCMonth(); // 0–11
-                deployedPerMonth[month] += 1;
+        fetchYears();
+    }, []);
+
+    /* ---------------- Fetch chart data ---------------- */
+    useEffect(() => {
+        if (!year) return;
+
+        const fetchData = async () => {
+            setLoading(true);
+
+            // Personnel up to end of year
+            const { data: personnel, error: personnelError } = await supabase
+                .from("personnel")
+                .select("created_at")
+                .lte("created_at", `${year}-12-31`);
+
+            if (personnelError) {
+                console.error(personnelError);
+                setLoading(false);
+                return;
+            }
+
+            // Deployments for selected year
+            const { data: deployments, error: deploymentsError } = await supabase
+                .from("deployments")
+                .select("created_at")
+                .eq("status", "Deployed")
+                .gte("created_at", `${year}-01-01`)
+                .lte("created_at", `${year}-12-31`);
+
+            if (deploymentsError) {
+                console.error(deploymentsError);
+                setLoading(false);
+                return;
+            }
+
+            const deployedPerMonth = Array(12).fill(0);
+            deployments?.forEach(dep => {
+                const monthIndex = new Date(dep.created_at).getMonth();
+                deployedPerMonth[monthIndex] += 1;
             });
 
-            const chartData = months.map((month, idx) => ({
-                month,
-                deployed: deployedPerMonth[idx],
-                available: Math.max(totalWorkers - deployedPerMonth[idx], 0),
-            }));
+            const isCurrentYear = year === currentYear;
+            const lastMonthIndex = isCurrentYear ? currentMonthIndex : 11;
+
+            const chartData: ChartData[] = months
+                .slice(0, lastMonthIndex + 1)
+                .map((month, idx) => {
+                    const endOfMonth = new Date(year, idx + 1, 0, 23, 59, 59);
+                    const personnelUpToMonth =
+                        personnel?.filter(p => new Date(p.created_at) <= endOfMonth).length ?? 0;
+
+                    return {
+                        month,
+                        deployed: deployedPerMonth[idx],
+                        available: Math.max(personnelUpToMonth - deployedPerMonth[idx], 0),
+                    };
+                });
 
             setData(chartData);
+            setLoading(false);
         };
 
         fetchData();
-    }, []);
+    }, [year]);
+
+    /* ---------------- Fetch available personnel ---------------- */
+    const fetchAvailablePersonnel = async (monthIndex: number) => {
+        const start = new Date(year, monthIndex, 1);
+        const end = new Date(year, monthIndex + 1, 0, 23, 59, 59);
+
+        const { data: personnel } = await supabase
+            .from("personnel")
+            .select("id, first_name, last_name, created_at")
+            .lte("created_at", end.toISOString());
+
+        const { data: deployed } = await supabase
+            .from("deployments")
+            .select("personnel_id")
+            .eq("status", "Deployed")
+            .gte("created_at", start.toISOString())
+            .lte("created_at", end.toISOString());
+
+        const deployedIds = new Set(deployed?.map(d => d.personnel_id));
+        const available = personnel?.filter(p => !deployedIds.has(p.id)) ?? [];
+
+        setPanel(prev => ({
+            ...prev,
+            loading: false,
+            personnel: available,
+        }));
+    };
+
+    /* ---------------- Fetch deployed personnel ---------------- */
+    const fetchDeployedPersonnel = async (monthIndex: number) => {
+        const start = new Date(year, monthIndex, 1);
+        const end = new Date(year, monthIndex + 1, 0, 23, 59, 59);
+
+        // 1️⃣ Get personnel_ids
+        const { data: deployments, error: depError } = await supabase
+            .from("deployments")
+            .select("personnel_id")
+            .eq("status", "Deployed")
+            .gte("created_at", start.toISOString())
+            .lte("created_at", end.toISOString());
+
+        if (depError) {
+            console.error(depError);
+            setPanel(prev => ({ ...prev, loading: false }));
+            return;
+        }
+
+        const personnelIds = deployments?.map(d => d.personnel_id) ?? [];
+
+        if (personnelIds.length === 0) {
+            setPanel(prev => ({ ...prev, loading: false, personnel: [] }));
+            return;
+        }
+
+        // 2️⃣ Fetch personnel info
+        const { data: personnel, error: perError } = await supabase
+            .from("personnel")
+            .select("id, first_name, last_name")
+            .in("id", personnelIds);
+
+        if (perError) {
+            console.error(perError);
+            setPanel(prev => ({ ...prev, loading: false }));
+            return;
+        }
+
+        setPanel(prev => ({
+            ...prev,
+            loading: false,
+            personnel: personnel ?? [],
+        }));
+    };
+
+    /* ---------------- Initial fetch for current month ---------------- */
+    useEffect(() => {
+        if (!year) return;
+
+        setPanel(prev => ({ ...prev, loading: true }));
+        fetchAvailablePersonnel(panel.monthIndex);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [year]);
+
+    /* ---------------- Bar click handler ---------------- */
+    const handleBarClick = (monthIndex: number) => {
+        setPanel(prev => ({
+            ...prev,
+            monthIndex,
+            loading: true,
+            type: "available",
+        }));
+        fetchAvailablePersonnel(monthIndex);
+    };
+
+    /* ---------------- Panel toggle ---------------- */
+    const togglePanelType = () => {
+        const newType = panel.type === "available" ? "deployed" : "available";
+        setPanel(prev => ({ ...prev, type: newType, loading: true }));
+
+        if (newType === "available") fetchAvailablePersonnel(panel.monthIndex);
+        else fetchDeployedPersonnel(panel.monthIndex);
+    };
 
     return (
-        <div className="rounded-xl bg-white border border-neutral-200 p-2 md:p-6 h-full">
-            <div className="mb-6">
-                <h2 className="text-neutral-900 mb-1">Workforce Deployment Trends</h2>
-                <p className="text-sm text-neutral-500">Monthly deployment vs availability statistics</p>
+        <div className="rounded-xl bg-white border border-neutral-200 p-4 md:p-6 h-full">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-neutral-900 mb-1">
+                        Workforce Deployment Trends
+                    </h2>
+                    <p className="text-sm text-neutral-500">
+                        Monthly deployment vs availability statistics
+                    </p>
+                </div>
+
+                {/* Year selector */}
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="flex items-center gap-2">
+                            {year}
+                            <ChevronDown className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+
+                    <PopoverContent align="end" className="w-28 p-1">
+                        {years.map(y => (
+                            <button
+                                key={y}
+                                onClick={() => setYear(y)}
+                                className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-neutral-100
+                  ${y === year ? "bg-neutral-100 font-medium" : ""}
+                `}
+                            >
+                                {y}
+                            </button>
+                        ))}
+                    </PopoverContent>
+                </Popover>
             </div>
 
+            {/* Chart with sticky panel */}
             <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barCategoryGap="14%" barGap={2}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
-                        <XAxis dataKey="month" stroke="#a3a3a3" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#a3a3a3" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: '#ffffff',
-                                border: '1px solid #e5e5e5',
-                                borderRadius: '8px',
-                                fontSize: '12px',
-                            }}
-                        />
-                        <Bar dataKey="deployed" fill="#10b981" radius={[40, 40, 40, 40]} isAnimationActive={false} />
-                        <Bar dataKey="available" fill="#acf6cc" radius={[40, 40, 40, 40]} isAnimationActive={false} />
-                    </BarChart>
-                </ResponsiveContainer>
+                <div className="grid grid-cols-[280px_1fr] gap-4 h-full">
+                    {/* Sticky panel */}
+                    <div className="relative">
+                        {panel.visible && (
+                            <div className="sticky top-6 h-fit rounded-xl border bg-white p-4 shadow-sm">
+                                <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h3 className="font-medium text-sm">
+                                            {panel.type === "deployed"
+                                                ? "Deployed Personnel"
+                                                : "Available Personnel"}
+                                        </h3>
+                                        <p className="text-xs text-neutral-500">
+                                            {months[panel.monthIndex]} {year}, {panel.personnel.length} HCW
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={togglePanelType}
+                                        className="text-xs text-blue-500 hover:text-blue-700"
+                                    >
+                                        Switch to {panel.type === "available" ? "Deployed" : "Available"}
+                                    </button>
+                                </div>
+
+                                {panel.loading ? (
+                                    <p className="text-sm text-neutral-500">Loading…</p>
+                                ) : panel.personnel.length === 0 ? (
+                                    <p className="text-sm text-neutral-500">No personnel found</p>
+                                ) : (
+                                    <ul className="space-y-2 max-h-72 overflow-auto">
+                                        {panel.personnel.map(p => (
+                                            <li key={p.id} className="text-sm border-b pb-1 last:border-b-0">
+                                                {p.first_name} {p.last_name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Chart */}
+                    <div className="h-full">
+                        {loading ? (
+                            <div className="flex items-center justify-center h-full text-sm text-neutral-500">
+                                Loading chart…
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={data} barCategoryGap="14%" barGap={2}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} />
+                                    <YAxis tickLine={false} axisLine={false} fontSize={12} />
+                                    <Tooltip />
+                                    <Bar
+                                        dataKey="deployed"
+                                        radius={[40, 40, 40, 40]}
+                                        isAnimationActive={false}
+                                        onClick={(data, index) => handleBarClick(index)}
+                                        fill="#047857"
+                                    />
+                                    <Bar
+                                        dataKey="available"
+                                        radius={[40, 40, 40, 40]}
+                                        isAnimationActive={false}
+                                        onClick={(data, index) => handleBarClick(index)}
+                                        fill="#6ee7b7"
+                                    />
+
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
             </div>
 
+            {/* Legend */}
             <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-neutral-200">
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-emerald-500"></div>
+                    <div className="w-3 h-3 rounded-sm bg-emerald-500" />
                     <span className="text-sm text-neutral-600">Deployed</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-neutral-300"></div>
+                    <div className="w-3 h-3 rounded-sm bg-emerald-200" />
                     <span className="text-sm text-neutral-600">Available</span>
                 </div>
             </div>
         </div>
     );
 }
+

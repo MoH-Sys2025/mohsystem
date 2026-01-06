@@ -39,7 +39,6 @@ export function CreateAccountPage({ onBackToLogin }: CreateAccountPageProps) {
             toast.error("Please complete the 6-digit OTP");
             return;
         }
-        console.log(otp)
         setLoading(true);
 
         const result = await api.signupWithOtpCheck({

@@ -24,7 +24,7 @@ export function UserProfileHeader({ name, role, image }) {
             {/* Name + Role */}
             <div className="hidden md:block">
                 <h2 className="text-sm font-semibold">{name}</h2>
-                <p className="text-xs text-neutral-500">{role}</p>
+                <p className="text-xs text-neutral-500 capitalize">{role}</p>
             </div>
         </div>
     );

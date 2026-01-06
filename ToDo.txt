@@ -29,4 +29,4 @@ pnpm dlx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&st
 bunx --bun shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=neutral&theme=lime&iconLibrary=lucide&font=inter&menuAccent=subtle&menuColor=default&radius=large&template=vite" --template vite
 from deployments table  should use only rows with columns deploy_status "active" and status "Deployed" or "Pending" for Deployed bars in graph. In personnel table use the column
 
- 0887683536, maulidi kankhwala
+ 0887683536, maulidi kankhwala #10b981 #acf6cc
