@@ -138,25 +138,13 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
 
                                 <ul className="text-sm flex flex-col text-neutral-700">
                                     {worker?.qualifications ? worker?.qualifications: "No qualifications are available"}
-                                    {/*{(!worker?.qualifications ||*/}
-                                    {/*    worker?.qualifications.length === 0) ? (*/}
-                                    {/*    <li className="text-gray-400">No qualifications available</li>*/}
-                                    {/*) : (*/}
-                                    {/*    worker?.qualifications.map((item, index) => (*/}
-                                    {/*        <li key={`qual-${index}`} className="py-1">*/}
-                                    {/*            <div className="  bg-gray-200 px-3 py-1 rounded-full">*/}
-                                    {/*                {item}*/}
-                                    {/*            </div>*/}
-                                    {/*        </li>*/}
-                                    {/*    ))*/}
-                                    {/*)}*/}
                                 </ul>
                             </div>
 
                             {/*Competencies*/}
                             <div className="mt-6 w-full text-left">
                                 <h3 className="font-semibold mb-2">Competencies</h3>
-                                <ul className="list-none list-disc ml-0 text-sm flex flex-col justify-start text-neutral-700">
+                                <ul className="list-none ml-0 text-sm flex flex-col justify-start text-neutral-700">
                                     {!worker?.metadata?.competencies || worker?.metadata?.competencies.length === 0 ? (
                                         <div className="text-gray-400">No competencies are available</div>
                                     ) : (

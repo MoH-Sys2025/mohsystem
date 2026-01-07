@@ -1,219 +1,270 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { GraduationCap, ChevronDown, ChevronUp, FileBadge, Filter, BadgeCheck, CircleX } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import {
+    GraduationCap,
+    ChevronDown,
+    ChevronUp,
+    FileBadge,
+    CircleCheck,
+    CircleX,
+} from "lucide-react";
 
-// ICON MAPPER FOR TRAINING TYPES
-const getTrainingIcon = (title) => {
-    if (title.toLowerCase().includes("cholera")) return "💧";
-    if (title.toLowerCase().includes("ipc")) return "🧤";
-    if (title.toLowerCase().includes("vaccin")) return "💉";
-    if (title.toLowerCase().includes("polio")) return "🧬";
+import { supabase} from "@/supabase/supabase.ts";
+
+/* ICON MAPPER */
+const getTrainingIcon = (title: string) => {
+    const t = title.toLowerCase();
+    if (t.includes("cholera")) return "💧";
+    if (t.includes("ipc")) return "🧤";
+    if (t.includes("vaccin")) return "💉";
+    if (t.includes("polio")) return "🧬";
     return "📘";
 };
 
-export function TrainingSection() {
-    const trainingsData = [
-        {
-            title: "Cholera Case Management",
-            provider: "MoH & WHO",
-            date: "2024-08-12",
-            accredited: true,
-            certificate: true,
-        },
-        {
-            title: "Emergency IPC Training",
-            provider: "PHIM",
-            date: "2024-04-03",
-            accredited: true,
-            certificate: true,
-        },
-        {
-            title: "Polio Vaccination Response",
-            provider: "UNICEF",
-            date: "2023-01-20",
-            accredited: false,
-            certificate: false,
-        },
-        {
-            title: "Outbreak Surveillance Skills",
-            provider: "AFENET",
-            date: "2022-11-14",
-            accredited: true,
-            certificate: true,
-        },
-        {
-            title: "Epidemiology Basics",
-            provider: "MoH",
-            date: "2021-06-02",
-            accredited: false,
-            certificate: false,
-        },
-    ];
+type TrainingRow = {
+    id: string;
+    title: string;
+    provider: string;
+    institution?: string;
+    start_date: string;
+    end_date?: string;
+    attended: boolean;
+    attendance_certificate_url: string | null;
+    score: number | null;
+    modality?: string;
+};
 
-    // STATES
+export function TrainingSection({ personnelId }: { personnelId: string }) {
+    const [rows, setRows] = useState<TrainingRow[]>([]);
     const [expanded, setExpanded] = useState(false);
+
     const [filterYear, setFilterYear] = useState("all");
     const [filterProvider, setFilterProvider] = useState("all");
-    const [filterAccredited, setFilterAccredited] = useState("all");
     const [sort, setSort] = useState("newest");
 
-    const years = ["all", ...new Set(trainingsData.map(t => t.date.split("-")[0]))];
-    const providers = ["all", ...new Set(trainingsData.map(t => t.provider))];
+    /* FETCH ALL DATA FROM SUPABASE */
+    useEffect(() => {
+        const fetchTrainings = async () => {
+            const { data, error } = await supabase
+                .from("training_participants")
+                .select(`
+          attended,
+          attendance_certificate_url,
+          score,
+          completion_date,
+          trainings (
+            id,
+            title,
+            provider,
+            provider_id,
+            start_date,
+            end_date,
+            modality,
+            training_institutions!inner (
+              name
+            )
+          )
+        `)
+                .eq("personnel_id", personnelId);
 
-    // FILTER + SORT PIPELINE
-    let trainings = [...trainingsData];
+            if (!error && data) {
+                const normalized = data.map(tp => ({
+                    id: tp.trainings.id,
+                    title: tp.trainings.title,
+                    provider: tp.trainings.provider,
+                    institution: tp.trainings.training_institutions?.name ?? undefined,
+                    start_date: tp.trainings.start_date,
+                    end_date: tp.trainings.end_date,
+                    modality: tp.trainings.modality,
+                    attended: tp.attended,
+                    attendance_certificate_url: tp.attendance_certificate_url,
+                    score: tp.score,
+                }));
+                setRows(normalized);
+            }
+        };
 
-    if (filterYear !== "all")
-        trainings = trainings.filter(t => t.date.startsWith(filterYear));
+        fetchTrainings();
+    }, [personnelId]);
 
-    if (filterProvider !== "all")
-        trainings = trainings.filter(t => t.provider === filterProvider);
+    /* DERIVE FILTER OPTIONS FROM DB DATA */
+    const years = useMemo(() => {
+        const uniqueYears = new Set(rows.map(r => r.start_date?.slice(0, 4)));
+        return ["all", ...Array.from(uniqueYears)];
+    }, [rows]);
 
-    if (filterAccredited !== "all")
-        trainings = trainings.filter(t => t.accredited === (filterAccredited === "true"));
+    const providers = useMemo(() => {
+        const uniqueProviders = new Set(rows.map(r => r.provider ?? r.institution ?? "Unknown"));
+        return ["all", ...Array.from(uniqueProviders)];
+    }, [rows]);
 
-    if (sort === "newest") {
-        trainings.sort((a, b) => new Date(b.date) - new Date(a.date));
-    } else if (sort === "oldest") {
-        trainings.sort((a, b) => new Date(a.date) - new Date(b.date));
-    }
+    /* FILTER + SORT */
+    const filtered = useMemo(() => {
+        let data = [...rows];
 
-    const visibleTrainings = expanded ? trainings : trainings.slice(0, 3);
+        if (filterYear !== "all")
+            data = data.filter(r => r.start_date.startsWith(filterYear));
 
-    // PROGRESS CALCULATION
-    const requiredTrainings = 10; // You can change this later (configurable)
-    const progressPercent = (trainingsData.length / requiredTrainings) * 100;
+        if (filterProvider !== "all")
+            data = data.filter(
+                r => (r.provider ?? r.institution ?? "Unknown") === filterProvider
+            );
+
+        data.sort((a, b) =>
+            sort === "newest"
+                ? new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+                : new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+        );
+
+        return data;
+    }, [rows, filterYear, filterProvider, sort]);
+
+    const visible = expanded ? filtered : filtered.slice(0, 3);
+
+    /* PROGRESS */
+    const completedCount = rows.filter(r => r.attended).length;
+    const progressPercent = rows.length ? (completedCount / rows.length) * 100 : 0;
 
     return (
-        <Card className="border bg-white rounded-lg">
-            <CardContent className="space-y-4 p-6">
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                    <GraduationCap size={18} /> Trainings
+                </CardTitle>
+            </CardHeader>
 
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-medium flex items-center gap-2">
-                        <GraduationCap size={18} />
-                        Trainings
-                    </h2>
+            <CardContent className="space-y-4">
+                {/* FILTERS */}
+                <div className="flex flex-wrap gap-2">
+                    <Select value={filterYear} onValueChange={setFilterYear}>
+                        <SelectTrigger className="w-[130px]">
+                            <SelectValue placeholder="Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {years.map(y => (
+                                <SelectItem key={y} value={y}>
+                                    {y === "all" ? "All years" : y}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={filterProvider} onValueChange={setFilterProvider}>
+                        <SelectTrigger className="w-[160px]">
+                            <SelectValue placeholder="Provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {providers.map(p => (
+                                <SelectItem key={p} value={p}>
+                                    {p === "all" ? "All providers" : p}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={sort} onValueChange={setSort}>
+                        <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Sort" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="newest">Newest first</SelectItem>
+                            <SelectItem value="oldest">Oldest first</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-wrap gap-2 text-xs">
-                    <select
-                        className="px-2 py-1 border rounded text-xs"
-                        value={filterYear}
-                        onChange={(e) => setFilterYear(e.target.value)}
-                    >
-                        {years.map((yr, i) => (
-                            <option key={i} value={yr}>{yr === "all" ? "All Years" : yr}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="px-2 py-1 border rounded text-xs"
-                        value={filterProvider}
-                        onChange={(e) => setFilterProvider(e.target.value)}
-                    >
-                        {providers.map((p, i) => (
-                            <option key={i} value={p}>{p === "all" ? "All Providers" : p}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="px-2 py-1 border rounded text-xs"
-                        value={filterAccredited}
-                        onChange={(e) => setFilterAccredited(e.target.value)}
-                    >
-                        <option value="all">All</option>
-                        <option value="true">Accredited</option>
-                        <option value="false">Not Accredited</option>
-                    </select>
-
-                    <select
-                        className="px-2 py-1 border rounded text-xs"
-                        value={sort}
-                        onChange={(e) => setSort(e.target.value)}
-                    >
-                        <option value="newest">Sort: Newest</option>
-                        <option value="oldest">Sort: Oldest</option>
-                    </select>
+                {/* SUMMARY */}
+                <div className="flex gap-2 text-xs flex-wrap">
+                    <Badge variant="secondary">Completed {completedCount}</Badge>
+                    <Badge variant="outline">Total {rows.length}</Badge>
                 </div>
 
-                {/* Summary Row */}
-                <div className="flex gap-3 flex-wrap text-xs text-neutral-600">
-                    <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
-                        Completed: {trainingsData.length}
-                    </div>
-                    <div className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full">
-                        Accredited: {trainingsData.filter(t => t.accredited).length}
-                    </div>
-                    <div className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full">
-                        Required: {requiredTrainings}
-                    </div>
-                </div>
-
-                {/* Progress Bar */}
+                {/* PROGRESS */}
                 <div>
-                    <p className="text-xs text-neutral-600 mb-1">Training Progress</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                        Completion progress
+                    </p>
                     <Progress value={progressPercent} className="h-2" />
                 </div>
 
                 <Separator />
 
-                {/* TRAINING TIMELINE LIST */}
+                {/* TRAINING LIST */}
                 <ul className="space-y-4 text-sm">
-                    {visibleTrainings.map((t, index) => (
-                        <li key={index} className="border-l-2 border-neutral-300 pl-4 relative">
+                    {visible.map((t, i) => (
+                        <li key={i} className="border-l-2 pl-4 relative">
+                            <span className="absolute -left-[6px] top-2 w-3 h-3 bg-primary rounded-full" />
 
-                            {/* timeline bullet */}
-                            <div className="absolute -left-[5px] top-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-medium flex items-center gap-2">
+                                        {getTrainingIcon(t.title)} {t.title}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t.provider ?? t.institution} • {t.start_date}
+                                    </p>
+                                </div>
 
-                            {/* Title Row */}
-                            <div className="flex items-center justify-between">
-                <span className="font-medium flex items-center gap-2">
-                  <span>{getTrainingIcon(t.title)}</span>
-                    {t.title}
-                </span>
-
-                                {/* Certificate Icon */}
-                                {t.certificate && (
-                                    <FileBadge size={16} className="text-blue-500 cursor-pointer" />
+                                {t.attendance_certificate_url && (
+                                    <FileBadge
+                                        size={16}
+                                        className="text-primary cursor-pointer"
+                                        onClick={() =>
+                                            window.open(t.attendance_certificate_url, "_blank")
+                                        }
+                                    />
                                 )}
                             </div>
 
-                            {/* Provider + Date */}
-                            <p className="text-xs text-neutral-600 mt-1">
-                                {t.provider} • {t.date}
-                            </p>
-
-                            {/* Accreditation Badge */}
                             <div className="mt-1">
-                                {t.accredited ? (
-                                    <span className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded-full flex w-fit items-center gap-1">
-                    <BadgeCheck size={10} /> Accredited
-                  </span>
+                                {t.attended ? (
+                                    <Badge className="gap-1">
+                                        <CircleCheck size={12} /> Attended
+                                    </Badge>
                                 ) : (
-                                    <span className="px-2 py-0.5 text-[10px] bg-red-100 text-red-700 rounded-full flex w-fit items-center gap-1">
-                    <CircleX size={10} /> Not Accredited
-                  </span>
+                                    <Badge variant="destructive" className="gap-1">
+                                        <CircleX size={12} /> Not attended
+                                    </Badge>
                                 )}
                             </div>
                         </li>
                     ))}
                 </ul>
 
-                {/* SHOW MORE / LESS BUTTON */}
-                {trainings.length > 3 && (
-                    <button
-                        className="text-blue-600 text-xs flex items-center gap-1"
+                {/* SHOW MORE */}
+                {filtered.length > 3 && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setExpanded(!expanded)}
                     >
-                        {expanded ? <>Show Less <ChevronUp size={14} /></> : <>Show More <ChevronDown size={14} /></>}
-                    </button>
+                        {expanded ? (
+                            <>
+                                Show less <ChevronUp size={14} />
+                            </>
+                        ) : (
+                            <>
+                                Show more <ChevronDown size={14} />
+                            </>
+                        )}
+                    </Button>
                 )}
-
             </CardContent>
         </Card>
     );

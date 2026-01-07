@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     BarChart,
     Bar,
@@ -245,7 +245,7 @@ export function WorkforceChart() {
     };
 
     return (
-        <div className="rounded-xl bg-white border border-neutral-200 p-4 md:p-6 h-full">
+        <div className="rounded-xl bg-white border border-neutral-200 p-1 md:p-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
@@ -285,16 +285,15 @@ export function WorkforceChart() {
             {/* Chart with sticky panel */}
             <div className="md:h-80">
                 <div className="flex flex-col md:grid md:grid-cols-[280px_1fr] gap-4 h-full">
-                    {/* Sticky panel */}
-                    <div className="md:relative">
-                        {panel.visible && (
-                            <div className="md:sticky md:top-6 h-fit rounded-xl border bg-white p-4 shadow-sm">
-                                <div className="flex items-start justify-between mb-3">
+                    {/* Panel */}
+                    {panel.visible && (
+                        <div className="md:relative w-full">
+                            <div className="rounded-xl border bg-white p-4 shadow-sm
+                        md:sticky md:top-6">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
                                     <div>
                                         <h3 className="font-medium text-sm">
-                                            {panel.type === "deployed"
-                                                ? "Deployed Personnel"
-                                                : "Available Personnel"}
+                                            {panel.type === "deployed" ? "Deployed Personnel" : "Available Personnel"}
                                         </h3>
                                         <p className="text-xs text-neutral-500">
                                             {months[panel.monthIndex]} {year}, {panel.personnel.length} HCW
@@ -315,7 +314,7 @@ export function WorkforceChart() {
                                     <p className="text-sm text-neutral-500">No personnel found</p>
                                 ) : (
                                     <ul className="space-y-2 max-h-72 overflow-auto">
-                                        {panel.personnel.map(p => (
+                                        {panel.personnel.map((p) => (
                                             <li key={p.id} className="text-sm border-b pb-1 last:border-b-0">
                                                 {p.first_name} {p.last_name}
                                             </li>
@@ -323,22 +322,24 @@ export function WorkforceChart() {
                                     </ul>
                                 )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Chart */}
-                    <div className="h-full">
+                    <div className="h-80 md:h-full w-full">
                         {loading ? (
                             <div className="flex items-center justify-center h-full text-sm text-neutral-500">
                                 Loading chart…
                             </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data} barCategoryGap="14%" barGap={2} className="">
+                                <BarChart className="p-0 right-5 md:mr-0" data={data} barCategoryGap="14%" barGap={2}
+                                          margin={{ top: 0, right: 2, bottom: 0, left: 0 }}
+                                >
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} />
                                     <YAxis tickLine={false} axisLine={false} fontSize={12} />
-                                    <Tooltip />
+                                    <Tooltip wrapperClassName="rounded-lg" />
                                     <Bar
                                         dataKey="deployed"
                                         radius={[40, 40, 40, 40]}
@@ -353,13 +354,14 @@ export function WorkforceChart() {
                                         onClick={(data, index) => handleBarClick(index)}
                                         fill="#6ee7b7"
                                     />
-
                                 </BarChart>
                             </ResponsiveContainer>
                         )}
                     </div>
                 </div>
             </div>
+
+
 
             {/* Legend */}
             <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-neutral-200">

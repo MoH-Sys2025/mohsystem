@@ -1,229 +1,329 @@
-import { GraduationCap, Calendar, Users, Award, Plus } from 'lucide-react';
-import {JSX} from "react";
-import {Button} from "@/components/ui/button.tsx";
+import { useEffect, useState } from "react";
+import { GraduationCap, Calendar, Users, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogClose, DialogFooter,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/supabase/supabase.ts";
 
 interface TrainingProps {
     onNavigate: (page: string) => void;
+    personnelId: string; // current logged-in user
 }
 
-export function Trainings({onNavigate}: TrainingProps): JSX.Element {
-  const upcomingTrainings = [
-    {
-      title: 'Emergency Response Protocol',
-      date: '2024-12-01',
-      duration: '3 days',
-      participants: 45,
-      location: 'Lilongwe Training Center',
-      status: 'Open for Registration',
-    },
-    {
-      title: 'Cholera Case Management',
-      date: '2024-12-05',
-      duration: '2 days',
-      participants: 30,
-      location: 'Blantyre District Hospital',
-      status: 'Open for Registration',
-    },
-    {
-      title: 'COVID-19 Vaccination Updates',
-      date: '2024-12-10',
-      duration: '1 day',
-      participants: 60,
-      location: 'Online',
-      status: 'Registration Closing Soon',
-    },
-  ];
+type Training = {
+    id: string;
+    title: string;
+    start_date: string;
+    end_date: string;
+    location: string;
+    participantsCount: number;
+    registered: boolean;
+    certified?: number;
+};
 
-  const completedTrainings = [
-    {
-      title: 'Outbreak Investigation Basics',
-      completedDate: '2024-11-15',
-      participants: 52,
-      certified: 48,
-    },
-    {
-      title: 'Personal Protective Equipment Use',
-      completedDate: '2024-11-10',
-      participants: 68,
-      certified: 65,
-    },
-    {
-      title: 'Data Collection & Reporting',
-      completedDate: '2024-11-05',
-      participants: 42,
-      certified: 40,
-    },
-  ];
+type Personnel = {
+    id: string;
+    first_name: string;
+    last_name: string;
+};
 
-  return (
-    <div className="space-y-8 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-neutral-900 mb-2">Trainings</h1>
-          <p className="text-neutral-500">Manage training programs and certifications for healthcare workers</p>
-        </div>
-        <Button onClick={()=>onNavigate("form trainings")} className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg text-gray hover:bg-gray-200 flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Create Training
-        </Button>
-      </div>
+export function Trainings({ onNavigate, personnelId }: TrainingProps) {
+    const [upcoming, setUpcoming] = useState<Training[]>([]);
+    const [completed, setCompleted] = useState<Training[]>([]);
+    const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
+    const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
+    const [selectedPersonnel, setSelectedPersonnel] = useState<Set<string>>(new Set());
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Total Trainings</p>
-          <p className="text-3xl font-semibold text-neutral-900">127</p>
-        </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Upcoming</p>
-          <p className="text-3xl font-semibold text-neutral-900">8</p>
-        </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Certified Workers</p>
-          <p className="text-3xl font-semibold text-neutral-900">1,847</p>
-        </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-sm text-neutral-500 mb-1">Completion Rate</p>
-          <p className="text-3xl font-semibold text-neutral-900">92.5%</p>
-        </div>
-      </div>
+    // Fetch trainings
+    useEffect(() => {
+        const fetchTrainings = async () => {
+            const today = new Date().toISOString().split("T")[0];
 
-      {/* Training Categories */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl border border-neutral-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <h3 className="text-neutral-900 mb-2">Disease-Specific Training</h3>
-          <p className="text-sm text-neutral-500 mb-4">Cholera, COVID-19, Malaria, and other outbreak-specific training</p>
-          <div className="text-sm font-medium text-emerald-600">42 programs →</div>
-        </div>
+            // Upcoming trainings
+            const { data: upcomingData } = await supabase
+                .from("trainings")
+                .select(`
+          id,
+          title,
+          start_date,
+          end_date,
+          location,
+          training_participants(id, personnel_id)
+        `)
+                .gte("start_date", today)
+                .order("start_date", { ascending: true });
 
-        <div className="bg-white rounded-xl border border-neutral-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
-          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-            <Award className="w-6 h-6" />
-          </div>
-          <h3 className="text-neutral-900 mb-2">Certification Programs</h3>
-          <p className="text-sm text-neutral-500 mb-4">Professional certifications and skill development courses</p>
-          <div className="text-sm font-medium text-blue-600">28 programs →</div>
-        </div>
+            const upcomingNormalized: Training[] = (upcomingData || []).map((t: any) => ({
+                id: t.id,
+                title: t.title,
+                start_date: t.start_date,
+                end_date: t.end_date,
+                location: t.location,
+                participantsCount: t.training_participants?.length || 0,
+                registered: t.training_participants?.some(
+                    (p: any) => String(p.personnel_id).trim().toLowerCase() === String(personnelId).trim().toLowerCase()
+                ) || false,
+            }));
 
-        <div className="bg-white rounded-xl border border-neutral-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
-          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-4">
-            <Users className="w-6 h-6" />
-          </div>
-          <h3 className="text-neutral-900 mb-2">Team Coordination</h3>
-          <p className="text-sm text-neutral-500 mb-4">Leadership and outbreak response team management</p>
-          <div className="text-sm font-medium text-amber-600">18 programs →</div>
-        </div>
-      </div>
+            setUpcoming(upcomingNormalized);
 
-      {/* Upcoming Trainings */}
-      <div>
-        <h2 className="text-neutral-900 mb-4">Upcoming Trainings</h2>
-        <div className="space-y-4">
-          {upcomingTrainings.map((training, index) => (
-            <div key={index} className="bg-white rounded-xl border border-neutral-200 p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-neutral-900">{training.title}</h3>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      training.status === 'Registration Closing Soon'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      {training.status}
-                    </span>
-                  </div>
+            // Completed trainings
+            const { data: completedData } = await supabase
+                .from("trainings")
+                .select(`
+          id,
+          title,
+          end_date,
+          training_participants(id, personnel_id, attendance_certificate_url)
+        `)
+                .lte("end_date", today)
+                .order("end_date", { ascending: false });
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-neutral-400" />
-                      <div>
-                        <p className="text-xs text-neutral-500">Date</p>
-                        <p className="text-sm font-medium text-neutral-900">{training.date}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-500">Duration</p>
-                      <p className="text-sm font-medium text-neutral-900">{training.duration}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-neutral-400" />
-                      <div>
-                        <p className="text-xs text-neutral-500">Participants</p>
-                        <p className="text-sm font-medium text-neutral-900">{training.participants}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-500">Location</p>
-                      <p className="text-sm font-medium text-neutral-900">{training.location}</p>
-                    </div>
-                  </div>
+            const completedNormalized: Training[] = (completedData || []).map((t: any) => {
+                const participantsCount = t.training_participants?.length || 0;
+                const certified = t.training_participants?.filter((p: any) => p.attendance_certificate_url).length || 0;
+                return {
+                    id: t.id,
+                    title: t.title,
+                    start_date: "",
+                    end_date: t.end_date,
+                    location: "",
+                    participantsCount,
+                    certified,
+                    registered: false,
+                };
+            });
+
+            setCompleted(completedNormalized);
+        };
+
+        fetchTrainings();
+    }, [personnelId]);
+
+    // Open register modal
+    const openRegisterModal = async (training: Training) => {
+        setSelectedTraining(training);
+        setSelectedPersonnel(new Set());
+
+        // Fetch all personnel
+        const { data: allPersonnel } = await supabase
+            .from("personnel")
+            .select("id, first_name, last_name");
+
+        // Fetch registered personnel for this training
+        const { data: registered } = await supabase
+            .from("training_participants")
+            .select("personnel_id")
+            .eq("training_id", training.id);
+
+        const registeredIds = (registered || []).map((r: any) =>
+            String(r.personnel_id).trim().toLowerCase()
+        );
+
+        // Filter unregistered personnel
+        const notRegistered = (allPersonnel || []).filter(
+            (p) => !registeredIds.includes(String(p.id).trim().toLowerCase())
+        );
+
+        setPersonnelList(notRegistered);
+    };
+
+    // Toggle personnel selection
+    const togglePersonnelSelection = (id: string) => {
+        setSelectedPersonnel((prev) => {
+            const copy = new Set(prev);
+            if (copy.has(id)) copy.delete(id);
+            else copy.add(id);
+            return copy;
+        });
+    };
+
+    // Register selected personnel
+    const handleRegisterSelected = async () => {
+        if (!selectedTraining || selectedPersonnel.size === 0) return;
+
+        const insertData = Array.from(selectedPersonnel).map((pid) => ({
+            training_id: selectedTraining.id,
+            personnel_id: pid,
+            attended: false,
+        }));
+
+        await supabase.from("training_participants").insert(insertData);
+
+        // Update UI participants count
+        setUpcoming((prev) =>
+            prev.map((t) =>
+                t.id === selectedTraining.id
+                    ? { ...t, participantsCount: t.participantsCount + insertData.length }
+                    : t
+            )
+        );
+
+        setSelectedTraining(null);
+    };
+
+    return (
+        <div className="space-y-8 p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-neutral-900 mb-2">Trainings</h1>
+                    <p className="text-neutral-500">
+                        Manage training programs and certifications for healthcare workers
+                    </p>
                 </div>
-
-                <button className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition-colors ml-6 text-sm font-medium">
-                  Register
-                </button>
-              </div>
+                <Button
+                    onClick={() => onNavigate("form trainings")}
+                    className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg text-gray hover:bg-gray-200 flex items-center gap-2"
+                >
+                    <Plus className="w-5 h-5" />
+                    Create Training
+                </Button>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Completed Trainings */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-neutral-900">Recently Completed</h2>
-        </div>
+            {/* Upcoming Trainings */}
+            <h2 className="text-neutral-900 mb-4">Upcoming Trainings</h2>
+            <div className="space-y-4">
+                {upcoming.map((t) => (
+                    <div
+                        key={t.id}
+                        className="bg-white rounded-xl border border-neutral-200 p-6 flex justify-between items-start"
+                    >
+                        <div className="flex-1">
+                            <h3 className="text-neutral-900 mb-2">{t.title}</h3>
+                            <div className="flex gap-4 text-sm text-neutral-500">
+                                <div className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" /> {t.start_date}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Users className="w-4 h-4" /> {t.participantsCount} participants
+                                </div>
+                                <div>{t.location}</div>
+                            </div>
+                        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Training Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Completion Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Participants</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Certified</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Success Rate</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 bg-white">
-              {completedTrainings.map((training, index) => (
-                <tr key={index} className="hover:bg-neutral-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-neutral-900">{training.title}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{training.completedDate}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{training.participants}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">{training.certified}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-neutral-200 rounded-full h-2 max-w-24">
-                        <div
-                          className="bg-emerald-600 h-2 rounded-full"
-                          style={{ width: `${(training.certified / training.participants) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium text-neutral-700">
-                        {Math.round((training.certified / training.participants) * 100)}%
-                      </span>
+                        {/* Register Modal */}
+                        <Dialog
+                            open={!!selectedTraining && selectedTraining.id === t.id}
+                            onOpenChange={(open) => {
+                                if (!open) setSelectedTraining(null);
+                            }}
+                        >
+                            <DialogTrigger asChild>
+                                <Button
+                                    onClick={() => openRegisterModal(t)}
+                                    disabled={t.registered}
+                                    variant={t.registered ? "outline" : "default"}
+                                >
+                                    {t.registered ? "Registered" : "Register"}
+                                </Button>
+                            </DialogTrigger>
+
+                            <DialogContent className="max-w-lg w-10/12 mx-auto p-2 flex flex-col h-[60vh]">
+                                <DialogHeader className="px-6 py-2">
+                                    <DialogTitle className="text-md">Healthcare Workers</DialogTitle>
+                                </DialogHeader>
+
+                                {/* Scrollable area */}
+                                <ScrollArea className="flex-1 p-2 rounded-lg  bg-green-50 shadow-sm mx-4 overflow-y-auto">
+                                    {personnelList.length === 0 ? (
+                                        <p className="text-sm text-neutral-500">
+                                            All personnel are already registered.
+                                        </p>
+                                    ) : (
+                                        <ul className="space-y-0">
+                                            {personnelList.map((p) => (
+                                                <li
+                                                    key={p.id}
+                                                    className={`text-sm cursor-pointer px-4 py-2 rounded ${
+                                                        selectedPersonnel.has(p.id)
+                                                            ? "bg-emerald-100 text-green-900"
+                                                            : "hover:bg-gray-100 text-green-800"
+                                                    }`}
+                                                    onClick={() => togglePersonnelSelection(p.id)}
+                                                >
+                                                    {p.first_name} {p.last_name}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </ScrollArea>
+
+                                {/* Sticky footer */}
+                                <DialogFooter className=" bg-white border-t px-6 ">
+                                    <Button
+                                        onClick={handleRegisterSelected}
+                                        disabled={selectedPersonnel.size === 0}
+                                        size="sm"
+                                        className="text-sm w-full"
+                                    >
+                                        Register ({selectedPersonnel.size})
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                ))}
+            </div>
+
+            {/* Completed Trainings Table */}
+            <h2 className="text-neutral-900 mt-8 mb-4">Recently Completed</h2>
+            <div className="bg-white rounded-xl border border-neutral-200 overflow-x-auto">
+                <table className="w-full">
+                    <thead className="bg-neutral-50 border-b border-neutral-200">
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                            Training Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                            Completion Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                            Participants
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                            Certified
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                            Success Rate
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-200 bg-white">
+                    {completed.map((t, idx) => (
+                        <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                            <td className="px-6 py-4">{t.title}</td>
+                            <td className="px-6 py-4">{t.end_date}</td>
+                            <td className="px-6 py-4">{t.participantsCount}</td>
+                            <td className="px-6 py-4">{t.certified || 0}</td>
+                            <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-neutral-200 rounded-full h-2 max-w-24">
+                                        <div
+                                            className="bg-emerald-600 h-2 rounded-full"
+                                            style={{
+                                                width: `${t.participantsCount ? ((t.certified || 0) / t.participantsCount) * 100 : 0}%`,
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-medium text-neutral-700">
+                      {t.participantsCount ? Math.round(((t.certified || 0) / t.participantsCount) * 100) : 0}%
+                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
