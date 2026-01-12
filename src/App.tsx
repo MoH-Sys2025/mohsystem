@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { LoginPage } from "./components/LoginPage";
-import { Dashboard } from "./components/Dashboard";
+import { LoginPage } from "./components/LoginPage.tsx";
+import { Dashboard } from "./components/Dashboard.tsx";
 import { Toaster } from "sonner";
-import { SelectedMOHDataProvider } from "@/components/DataContext.tsx";
-import { AuthProvider, useSession } from "@/contexts/AuthProvider.tsx";
+import { SelectedMOHDataProvider } from "./components/DataContext.tsx";
+import { AuthProvider, useSession} from "./contexts/AuthProvider.tsx";
 import NotificationListener from "@/components/NotificationListener.tsx";
 import { CreateAccountPage} from "@/components/pages/CreateAccountPage.tsx";
 

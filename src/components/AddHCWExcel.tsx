@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import {ArrowRight, ArrowLeft, Download, Trash2, Search, Users, UserCheck2} from "lucide-react";
+import {ArrowRight, ArrowLeft, Download, Trash2, Search, Users, UserCheck2, Loader2} from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -58,6 +58,8 @@ export default function ExcelUploader() {
     const [searchTerm, setSearchTerm] = useState("");
     const [columnFilters, setColumnFilters] = useState({});
     const [selectedRows, setSelectedRows] = useState<number[]>([]);
+
+    const [isLoading, setIsLoading] = useState(false);
 
     const toggleRowSelection = (rowIndex: number) => {
         setSelectedRows((prev) =>
@@ -155,7 +157,6 @@ export default function ExcelUploader() {
                 const district_id = getDistrictIdByName(row.district);
                 const cadre_id = row.cadre_id || getCadreId(row.cadre); // resolve cadre_id if not already present
 
-                console.log(cadre_id)
                 return {
                     first_name: row.first_name,
                     last_name: row.last_name,
@@ -183,6 +184,7 @@ export default function ExcelUploader() {
 
 
             // Insert into personnel Table
+            setIsLoading(true);
             const { error } = await supabase
                 .from("personnel")
                 .insert(payload);
@@ -208,6 +210,7 @@ export default function ExcelUploader() {
             console.error(err);
             toast.error("⚠️ Unexpected error occurred.");
         }
+        setIsLoading(false);
     };
 
     // ------------------------------------------------------------
@@ -734,7 +737,7 @@ export default function ExcelUploader() {
                         </Button>
 
                         <Button variant="default" onClick={() => submitPersonnel()} className="flex items-center gap-2">
-                            Submit
+                            {isLoading && <Loader2/>}Submit
                         </Button>
                     </div>
                 </div>

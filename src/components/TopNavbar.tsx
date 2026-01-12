@@ -1,5 +1,5 @@
 import {Search, Bell, Badge, Loader2, MessageCircleReply} from "lucide-react";
-import { UserProfileHeader } from "@/components/ProfileHeader";
+import { UserProfileHeader } from "@/components/ProfileHeader.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {api, getTimeFromISO} from "@/supabase/Functions.tsx";

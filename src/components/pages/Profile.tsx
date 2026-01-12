@@ -11,13 +11,13 @@ import {
     Edit3, BriefcaseMedical, LinkIcon, Unlink
 } from "lucide-react";
 import DeploymentSummary from "@/components/DeploymentSummary.tsx";
-import {PerfomanceBarChart, Competencies} from "@/components/UserCharts.tsx";
 import {TrainingSection} from "@/components/Trainings.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {api, formatDate, getAge} from "@/supabase/Functions.tsx";
 import React from "react";
 import {Badge} from "@/components/ui/badge.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
+import {Competencies} from "../UserCharts.tsx";
 
 interface HCWProfileProps {
     onNavigate?: () => void;
@@ -37,6 +37,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
 
         // Update worker first
         setWorker(data);
+        console.log(data.trainings)
         setLinks([
             ["DHIS2", data.dhis2_sync],
             ["IHRMIS", data.ihrmis_sync]
@@ -174,7 +175,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
                     </div>
                     <div className="w-full flex flex-col lg:flex-row gap-1">
                         <div className="w-full lg:w-6/12 border-none md:p-0 rounded-lg"><DeploymentSummary imgSrc={imgSrc} worker={worker}  /></div>
-                        <div className="w-full lg:w-6/12 rounded-none"><TrainingSection  /></div>
+                        <div className="w-full lg:w-6/12 rounded-none"><TrainingSection trainings={worker?.trainings ?? []}  /></div>
                     </div>
                 </div>
             </div>

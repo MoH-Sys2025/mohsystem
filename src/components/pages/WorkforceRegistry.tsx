@@ -41,7 +41,6 @@ import {
     UsersRoundIcon, Truck, CheckCircle, Clock, Briefcase, XCircle, Circle
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {districts} from "@/supabase/districts"
 import {
     api,
     EXPORT_COLUMNS,
@@ -55,7 +54,6 @@ import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
 import {useSession} from "@/contexts/AuthProvider.tsx";
-import {showAlert} from "@/components/NotificationsAlerts.tsx";
 import {toast} from "sonner";
 
 interface WorkforceRegProps {
@@ -87,8 +85,7 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
     const [exportType, setExportType] = useState<"pdf" | "csv" | "excel" | "txt" | null>(null);
     const [fileName, setFileName] = useState("Healthcare Employees Registry");
-    const [selectedColumns, setSelectedColumns] = useState(
-        EXPORT_COLUMNS.map(c => c.label) // default: all columns selected
+    const [selectedColumns, setSelectedColumns] = useState(EXPORT_COLUMNS.map(c => c.label) // default: all columns selected
     );
 
     const { setSelectedMOHData } = useSelectedMOHData();
@@ -125,9 +122,10 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
         "Cadre": "cadre",
         "Role": "role",
         "District": "district",
+        "Trainings": null,
+        "Competencies": null, // not sortable
         "Status": "status",
         "Certifications": "certifications",
-        "Competencies": null, // not sortable
         "Actions": null,       // not sortable
     };
 
@@ -186,15 +184,17 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     { key: "role", label: "Role" },
     { key: "district", label: "District" },
     { key: "status", label: "Status" },
+    { key: "trainings", label: "Trainings" },
     { key: "certifications", label: "Certifications" },
     { key: "competencies", label: "Competencies" },
-];
+    ];
 
 const fieldMap: Record<string, string | null> = {
     cadre: "cadre",
     role: "role",
     district: "metadata.district",
     status: "metadata.worker_status",
+    trainings: "trainings",
     certifications: "qualifications",
     competencies: "metadata.competencies",
 };
@@ -603,6 +603,7 @@ return (
                                             "Cadre",
                                             "Role",
                                             "District",
+                                            "Trainings",
                                             "Competencies",
                                             "Status",
                                             "Certifications",
@@ -661,11 +662,22 @@ return (
                                             </TableCell>
 
                                             <TableCell className="px-3 py-1 text-xs">
-                                                {worker.role ?? "—"}
+                                                <div className="max-w-[200px] overflow-x-auto whitespace-nowrap overflow-y-hidden">
+                                                    {worker.role ?? "—"}</div>
                                             </TableCell>
 
                                             <TableCell className="px-3 py-1 text-xs">
                                                 {worker.metadata.district ?? "—"}
+                                            </TableCell>
+
+                                            <TableCell  className="px-3 py-1 text-xs space-x-2 items-center max-w-60 border">
+                                                <div className="max-w-[200px] overflow-x-auto whitespace-nowrap overflow-y-hidden">
+                                                    {Array.isArray(worker.trainings) && worker.trainings.length > 0 ? (
+                                                        worker.trainings.map((t, index) => <span className="border-green-300 bg-green-100 border px-1 rounded-sm" key={index}>{t}</span>)
+                                                    ) : (
+                                                        <span>—</span> // fallback if no trainings
+                                                    )}
+                                                </div>
                                             </TableCell>
 
                                             <TableCell className="px-2 py-1 text-xs">

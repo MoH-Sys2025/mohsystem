@@ -78,7 +78,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
           {/* Main Content with left padding */}
           <div className="flex-1 pl-16 lg:pl-64">
-              <TopNavbar />
+              <div className="sticky z-2 top-0 right-0"><TopNavbar /></div>
               {renderPage()}
           </div>
 

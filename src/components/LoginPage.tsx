@@ -12,28 +12,37 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('developer00@gmail.com');
+  const [password, setPassword] = useState('0123456');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setLoading(true);
-      await api.signin(email, password).then((result) => {
-          if(result.error !== null) {
-              toast.error("Invalid login credentials");
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const { data, error } = await api.signin(
+                "developer00@gmail.com",
+                "0123456"
+            );
+
+            if (error) {
+                toast.error("Invalid login credentials");
+                return;
             }
-          else
-          {
-              toast.success("Login Successful");
-              onLogin();
-          }
-      })
 
-      setLoading(false);
-  };
+            toast.success("Login Successful");
+            onLogin();
 
-  return (
+        } catch (err) {
+            toast.error("Something went wrong");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-5">

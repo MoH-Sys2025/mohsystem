@@ -1,13 +1,11 @@
 import { GeoJSON, MapContainer } from "react-leaflet";
-import malawiDistricts from "@/supabase/mw.json";
+import malawiDistricts from "@/supabase/mw.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/supabase/Functions.tsx";
 import { districts } from "@/supabase/districts.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover.tsx";
 import {Loader2, Maximize2, Menu, Minimize2, Settings} from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox.tsx";
-import { Label } from "@/components/ui/label.tsx";
 
 type DeploymentMapProps = {
     maximized: boolean;
