@@ -128,6 +128,27 @@ export default function ExcelUploader() {
         );
     };
 
+    // ------------------------------------------------------------
+// HELPERS
+// ------------------------------------------------------------
+
+    const normalizeTrainings = (value: any): string[] => {
+        if (!value) return [];
+
+        if (Array.isArray(value)) return value;
+
+        return String(value)
+            // split on comma(s), semicolon(s), or pipe(s)
+            .split(/,+|;+|\|+/)
+            .map((t) => t.trim())
+            .filter(Boolean);
+    };
+    const safeArray = (value: any): string[] => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        return normalizeTrainings(value);
+    };
+
     const getFacilitiesByDistrictName = (districtName) => {
         const district_id = getDistrictIdByName(districtName);
         if (!district_id) return [];
@@ -178,7 +199,8 @@ export default function ExcelUploader() {
                         facility_name: row.facility_name,
                         competencies: competencies[index],
                         worker_status: [row.employment_status, "Available"]
-                    }
+                    },
+                    trainings: row.trainings || [],
                 };
             });
 
@@ -257,15 +279,21 @@ export default function ExcelUploader() {
                 .map((row) => {
                     let obj = {};
                     headings.forEach((h, i) => {
-                        // make heading keys safe (trim)
                         const key = (h || "").toString().trim();
                         if (!key) return;
+
+                        if (key.toLowerCase() === "trainings") {
+                            obj.trainings = normalizeTrainings(row[i]);
+                            return;
+                        }
+
                         if (key === "phone") {
                             obj[key] = row[i] ? row[i] : "";
                         } else {
                             obj[key] = row[i] ?? "";
                         }
                     });
+
                     return obj;
                 })
                 .filter((row) =>
@@ -280,6 +308,13 @@ export default function ExcelUploader() {
                 );
 
             setRows(normalized);
+            setRows(
+                normalized.map((r) => ({
+                    ...r,
+                    trainings: safeArray(r.trainings),
+                }))
+            );
+
             setUploaded(true);
         };
 
@@ -468,15 +503,15 @@ export default function ExcelUploader() {
                                         </Button>
                                         <Button size="sm" variant="outline" className="flex flex-row items-center gap-1 text-sm p-2 text-gray-500 font-semibold">
                                             <UserCheck2 size={15} /> {selectedRows.length}
-                                            <Button
-                                                aria-disabled={(selectedRows.length === 0)? true : false}
-                                                size="xs" className={`w - 6 h-6 rounded-sm`}
-                                                variant="outline"
-                                                onClick={()=> setOpenDeleteDialog(true)}
-                                                disabled={selectedRows.length === 0}
-                                            >
-                                                <Trash2 size="xs" className={(selectedRows.length === 0) ? 'text-gray-500':'text-red-600'} />
-                                            </Button>
+                                        </Button>
+                                        <Button
+                                            aria-disabled={(selectedRows.length === 0)? true : false}
+                                            size="xs" className={`w - 6 h-6 rounded-sm`}
+                                            variant="outline"
+                                            onClick={()=> setOpenDeleteDialog(true)}
+                                            disabled={selectedRows.length === 0}
+                                        >
+                                            <Trash2 size={12} className={(selectedRows.length === 0) ? 'text-gray-500':'text-red-600'} />
                                         </Button>
                                     </div>
                                 </div>
@@ -500,8 +535,10 @@ export default function ExcelUploader() {
                                                                 onCheckedChange={toggleSelectAll}
                                                             />
                                                         </TableHead>
-                                                        {Object.keys(rows[0] || {}).map((col) => (
-                                                            <TableHead key={col} className="border p-2 text-left relative">
+                                                        {Object.keys(rows[0] || {})
+                                                            .filter((col) => col !== "trainings")
+                                                            .map((col) => (
+                                                                <TableHead key={col} className="border p-2 text-left relative">
                                                                 <div className="flex items-center justify-between">
                                                                     <span className="capitalize">{col}</span>
 
@@ -617,6 +654,8 @@ export default function ExcelUploader() {
                                        <TableRow className="bg-gray-100 top-0 z-10">
                                            <TableHead className="border p-2 w-50">Full Name</TableHead>
                                            <TableHead className="border p-2 w-80">Position</TableHead>
+                                           <TableHead className="border p-2">Trainings</TableHead>
+
                                            <TableHead className="border p-2">
                                                Facility <FacilitySelector index={null} />
                                            </TableHead>
@@ -640,8 +679,21 @@ export default function ExcelUploader() {
                                                 <TableCell className="border p-2">{position || "N/A"}</TableCell>
 
                                                 <TableCell className="border p-2">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {safeArray(person.trainings).length > 0 ? (
+                                                            safeArray(person.trainings).map((t, i) => (
+                                                                <Badge key={i} variant="outline">{t}</Badge>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-xs text-gray-400">None</span>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+
+                                                <TableCell className="border p-2">
                                                     <FacilitySelector index={index} />
                                                 </TableCell>
+
 
                                                 <TableCell className="border p-2">
                                                     <div className="flex flex-wrap gap-2 mb-2">
