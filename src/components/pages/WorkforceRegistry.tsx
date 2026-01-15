@@ -90,6 +90,9 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
     const { setSelectedMOHData } = useSelectedMOHData();
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 100; // 100 rows per page
+
     const SORT_FIELDS: Record<string, (w: any) => any> = {
         id: (w) => w.personnel_identifier ?? w.personnel_id,
         name: (w) => `${w.first_name ?? ""} ${w.last_name ?? ""}`,
@@ -109,10 +112,10 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     };
 
     const toggleSelectAllWorkers = () => {
-        if (selectedWorkerIds.length === sortedWorkers.length) {
+        if (selectedWorkerIds.length === pageWorkers.length) {
             setSelectedWorkerIds([]);
         } else {
-            setSelectedWorkerIds(sortedWorkers.map(w => w.id));
+            setSelectedWorkerIds(pageWorkers.map(w => w.id));
         }
     };
 
@@ -156,12 +159,12 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
     useEffect(() => {
         async function fetchPersonnel() {
+            setLoading(true);
             try {
-                const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
+                const data = await api.listPersonnel(); // batch-fetching version
                 const cadresData = Array.isArray(await api.listCadres(1000)) ? await api.listCadres(1000) : [];
                 setCadres(cadresData);
 
-                // Map cadre_name into worker objects
                 const mappedWorkers = data.map(worker => {
                     const cadre = cadresData.find(c => String(c.id) === String(worker.cadre_id));
                     return { ...worker, cadre_name: cadre?.name ?? "—" };
@@ -177,6 +180,10 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
 
         fetchPersonnel();
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterValue]);
 
 
     const filterOptions = [
@@ -221,29 +228,12 @@ const fieldMap: Record<string, string | null> = {
         return value;
     }
 
-    const filteredWorkers = workers.filter((worker) => {
-        const hay = Object.values(worker).map(normalizeForSearch).join(" ").toLowerCase();
-        const searchMatch = hay.includes(searchTerm.toLowerCase());
-
-        if (!selectedFilter || !filterValue) return searchMatch;
-
-        const workerValue = getField(worker, selectedFilter);
-
-        if (Array.isArray(workerValue)) {
-            return (
-                searchMatch &&
-                workerValue.some((c: any) =>
-                    String(c).toLowerCase().includes(filterValue.toLowerCase())
-                )
-            );
-        }
-
-        return (
-            searchMatch &&
-            String(workerValue ?? "")
-                .toLowerCase()
-                .includes(filterValue.toLowerCase())
-        );
+    const filteredWorkers = workers.filter(worker => {
+        const haystack = Object.values(worker)
+            .map(normalizeForSearch)
+            .join(" ")
+            .toLowerCase();
+        return haystack.includes(searchTerm.toLowerCase());
     });
 
     const sortedWorkers = [...filteredWorkers].sort((a, b) => {
@@ -259,6 +249,10 @@ const fieldMap: Record<string, string | null> = {
             ? String(av).localeCompare(String(bv))
             : String(bv).localeCompare(String(av));
     });
+
+// then slice for page
+    const pageWorkers = sortedWorkers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
 
 
     const stats = {
@@ -569,7 +563,7 @@ return (
 
                                 <Button onClick={async ()=>{
                                     setLoading(true)
-                                    const data = Array.isArray(await api.listPersonnel(1000)) ? await api.listPersonnel(1000) : [];
+                                    const data = Array.isArray(await api.listPersonnel()) ? await api.listPersonnel(1000) : [];
                                     setPersonnel(data);
                                     setLoading(false)
                                 }} variant="outline" className=" justify-start md:ml-auto text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
@@ -637,7 +631,7 @@ return (
                                 </TableHeader>
 
                                 <TableBody>
-                                    {sortedWorkers.map((worker, index) => (
+                                    {pageWorkers.map(worker => (
                                         <TableRow key={worker.id} className="hover:bg-neutral-50">
                                             <TableCell className="px-3 py-1 text-xs whitespace-nowrap gap-1 flex flex-row items-center">
                                                 <Input
@@ -749,6 +743,26 @@ return (
                         <p className="text-sm text-neutral-600">
                             Showing {filteredWorkers.length} of {workers.length} workers
                         </p>
+                        <div className="flex justify-between items-center px-6 py-2 bg-white border-t border-neutral-200">
+                            <Button
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                variant="outline"
+                            >
+                                Previous
+                            </Button>
+
+                            <span>Page {currentPage} of {Math.ceil(filteredWorkers.length / pageSize)}</span>
+
+                            <Button
+                                disabled={currentPage === Math.ceil(filteredWorkers.length / pageSize)}
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                variant="outline"
+                            >
+                                Next
+                            </Button>
+                        </div>
+
                     </div>
                 </div>
             </>
@@ -856,8 +870,8 @@ return (
                             setDeleteHCWDia(false);
                             setSelectedWorkerIds([]);
 
-                            const data = Array.isArray(await api.listPersonnel(1000))
-                                ? await api.listPersonnel(1000)
+                            const data = Array.isArray(await api.listPersonnel())
+                                ? await api.listPersonnel()
                                 : [];
 
                             setPersonnel(data);

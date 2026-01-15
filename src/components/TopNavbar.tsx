@@ -31,7 +31,7 @@ export function TopNavbar() {
 
             try {
                 const [notificate, userData] = await Promise.all([
-                    api.getNotifications(1000),
+                    api.getNotifications(10000),
                     api.getUser(session.user.id)
                 ]);
 

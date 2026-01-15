@@ -30,3 +30,25 @@ bunx --bun shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&
 from deployments table  should use only rows with columns deploy_status "active" and status "Deployed" or "Pending" for Deployed bars in graph. In personnel table use the column
 
  0887683536, maulidi kankhwala #10b981 #acf6cc
+
+ import { createClient } from '@supabase/supabase-js'
+
+ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
+ const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY
+ const supabase = createClient(supabaseUrl, supabaseKey)
+
+ async function getRowCount() {
+   // For supabase-js v2
+   const { count, error } = await supabase
+     .from('personnel')
+     .select('*', { count: 'exact', head: false })
+     .limit(1) // optional: reduce payload; select still returns count metadata
+
+   if (error) {
+     console.error('Count error', error)
+     throw error
+   }
+
+   console.log('Total rows:', count)
+   return count
+ }

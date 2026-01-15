@@ -27,12 +27,12 @@ export function DashboardHome({onNavigate}: DashboardProps) {
     const [responseRate, setResponseRate] = useState(0);
     const [responseStats, setResponseStats] = useState({ rate: 0, change: 0 });
     const [isMapMaximized, setIsMapMaximized] = useState(false);
-
+    const[allCount, setCount] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
-            const [data, workfoceStatsData, deploymentStatsRes, outbreakStatsData, data2, activeDeploy, activeOutbreaks, respondedOutbreaks,  responseStatsRes] = await Promise.all([
-                api.listPersonnel(10000),
+            const [allHCW, workfoceStatsData, deploymentStatsRes, outbreakStatsData, data2, activeDeploy, activeOutbreaks, respondedOutbreaks,  responseStatsRes] = await Promise.all([
+                api.getCountPersonnels(),
                 api.getWorkforceStats(),
                 api.getDeploymentStats(),
                 api.getActiveOutbreakStats(),
@@ -40,9 +40,9 @@ export function DashboardHome({onNavigate}: DashboardProps) {
                 api.getActiveDeployments(),
                 api.getActiveOutBreaks(),
                 api.getOutbreakInfo(),
-                api.getResponseStats()
+                api.getResponseStats(),
             ])
-            setWorkforce(data)
+            setWorkforce(allHCW)
             setWorkforceStat(workfoceStatsData)
             setDeploymentStats(deploymentStatsRes);
             setOutbreaksCount(activeOutbreaks)
@@ -69,7 +69,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
     ]
 
     const starts = [
-        {title:"Total Health workers", icon: Users, change: workforceStat.total-workforceStat.change, value: workforce.length},
+        {title:"Total Health workers", icon: Users, change: workforceStat.total-workforceStat.change, value: workforce},
         {title:"Active Deployments", icon: UserCheck, change: deploymentStats.change, value: activeDeploy },
         {title:"Active Outbreaks", icon: AlertTriangle, change: outbreakStats.change, value: outbreakStats.total},
         {title:"Response Rate", icon: TrendingUp, change: `${responseStats.rate}%`, value: `${responseRate}%`},

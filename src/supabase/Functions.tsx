@@ -1,12 +1,9 @@
 import {supabase} from "@/supabase/supabase.ts";
 import {toast} from "sonner";
 import * as XLSX from "xlsx";
-
 import { useEffect, useRef, useState } from "react";
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import {useSession} from "@/contexts/AuthProvider.tsx";
 
 interface SignUpParams {
     full_name: string;
@@ -91,7 +88,18 @@ export const api = {
         return { data: userData };
     },
 
-async sendNotification(
+    async getCountPersonnels() {
+        const { count, error } = await supabase
+            .from("personnel")
+            .select("*", { count: "exact", head: true });
+
+        if (error) {
+            throw error;
+        }
+
+        return count;
+    },
+    async sendNotification(
         userId: string,
         notifData?: Partial<{
             title: string;
@@ -392,32 +400,53 @@ async sendNotification(
         return true;
     },
 
-    async listPersonnel(limit = 100) {
-        const { data, error } = await supabase
-            .from("personnel")
-            .select("*")
-            .eq("system_status", "registered") // <-- filter only registered
-            .order("personnel_identifier", { ascending: true })
-            .limit(limit);
+    async listPersonnel() {
+        let allData: any[] = [];
+        let offset = 0;
+        const batchSize = 1000;
 
-        if (error) toast.error("Error fetching data");
-        return data;
+        while (true) {
+            const { data } = await supabase
+                .from("personnel")
+                .select("*")
+                .eq("system_status", "registered")
+                .range(offset, offset + batchSize - 1);
+
+            if (!data || data.length === 0) break;
+
+            allData = [...allData, ...data];
+            if (data.length < batchSize) break;
+
+            offset += batchSize;
+        }
+
+        return allData;
+    },
+    async  listPersonnelMetaWorker() {
+        let allData: any[] = [];
+        let offset = 0;
+        const batchSize = 1000;
+
+        while (true) {
+            const { data, error } = await supabase
+                .from("personnel")
+                .select("*")
+                .eq("system_status", "registered")
+                .filter("metadata->worker_status->>1", "eq", "Available")
+                .range(offset, offset + batchSize - 1);
+
+            if (!data || data.length === 0) break;
+
+            allData = [...allData, ...data];
+            if (data.length < batchSize) break;
+
+            offset += batchSize;
+        }
+
+        return allData;
     },
 
-    async  listPersonnelMetaWorker(limit = 1000) {
-        const { data, error } = await supabase
-            .from("personnel")
-            .select("*")
-            .eq("system_status", "registered") // <-- filter only registered
-            .filter("metadata->worker_status->>1", "eq", "Available")
-            .order("personnel_identifier", { ascending: true })
-            .limit(limit);
-
-        if (error) toast.error("Error fetching health workers data");
-        return data;
-    },
-
-    async listDistricts(limit = 100) {
+    async listDistricts(limit = 35) {
         const { data, error } = await supabase
             .from("administrative_regions")
             .select("*")

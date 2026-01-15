@@ -177,7 +177,6 @@ export default function ExcelUploader() {
             const payload = rows.map((row, index) => {
                 const district_id = getDistrictIdByName(row.district);
                 const cadre_id = row.cadre_id || getCadreId(row.cadre); // resolve cadre_id if not already present
-
                 return {
                     first_name: row.first_name,
                     last_name: row.last_name,
@@ -200,7 +199,7 @@ export default function ExcelUploader() {
                         competencies: competencies[index],
                         worker_status: [row.employment_status, "Available"]
                     },
-                    trainings: row.trainings || [],
+                    trainings: safeArray(row.trainings) || [],
                 };
             });
 
@@ -211,7 +210,6 @@ export default function ExcelUploader() {
                 .from("personnel")
                 .insert(payload);
             if (error) {
-                console.error(error);
                 toast.error("⚠️ Upload failed, Check some fields are not properly set");
                 return;
             }
@@ -229,7 +227,6 @@ export default function ExcelUploader() {
                 }
             )
         } catch (err) {
-            console.error(err);
             toast.error("⚠️ Unexpected error occurred.");
         }
         setIsLoading(false);

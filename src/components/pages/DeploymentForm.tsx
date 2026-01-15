@@ -52,7 +52,7 @@ let _cachedIndex: number | null = null;
 
 async function loadCachedPersonnel() {
     if (_cachedPersonnel) return _cachedPersonnel;
-    const p = await api.listPersonnelMetaWorker(2000).catch(() => []);
+    const p = await api.listPersonnelMetaWorker().catch(() => []);
     _cachedPersonnel = p || [];
     return _cachedPersonnel;
 }
@@ -564,7 +564,7 @@ function RightPersonnelPanel() {
     useEffect(() => {
         const load = async () => {
             const [p, f] = await Promise.all([
-                api.listPersonnelMetaWorker(2000).catch(() => []),
+                api.listPersonnelMetaWorker().catch(() => []),
                 api.listFacilities(2000).catch(() => []),
             ]);
             setAllPersonnel(p || []);

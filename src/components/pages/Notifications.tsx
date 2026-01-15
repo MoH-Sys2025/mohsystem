@@ -24,7 +24,7 @@ export default function Notifications() {
     useEffect(() => {
         async function load() {
             try {
-                const data = await api.getNotifications(1000);
+                const data = await api.getNotifications(10000);
                 setNotifications(data || []);
             } catch (err) {
                 console.error(err);

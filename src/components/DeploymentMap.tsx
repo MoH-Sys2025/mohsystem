@@ -46,7 +46,7 @@ export function DeploymentMap({ maximized, onToggleMaximize }: DeploymentMapProp
         };
 
         const fetchWorkforce = async () => {
-            const personnel = await api.listPersonnel(10000);
+            const personnel = await api.listPersonnel();
             const grouped: Record<string, any[]> = {};
 
             personnel.forEach(p => {
