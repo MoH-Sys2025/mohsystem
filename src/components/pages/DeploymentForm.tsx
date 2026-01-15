@@ -165,7 +165,7 @@ const leftFormSchema = z.object({
     deployment_id: z.string().nullable().optional(),
     team_lead: z.string().nullable().optional(),
     role_description: z.string().optional().nullable(),
-    status: z.enum(["Pending", "Deployed", "Available"]).default("Pending"),
+    status: z.enum(["Pending", "Deployed", "Available"]).default("Deployed"),
     notes: z.string().optional().nullable(),
 });
 

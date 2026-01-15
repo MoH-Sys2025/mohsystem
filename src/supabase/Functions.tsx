@@ -775,34 +775,158 @@ export function formatDate(dateString: string) {
 
     return `${day} ${month} ${year}`;
 }
+export const EXPORT_COLUMNS = [
+    {
+        key: "personnel_identifier",
+        label: "Worker ID",
+        getValue: (w: any) =>
+            w.personnel_identifier ?? w.personnel_id ?? "—",
+    },
+    {
+        key: "name",
+        label: "Name",
+        getValue: (w: any) =>
+            `${w.first_name ?? ""} ${w.last_name ?? ""}`.trim(),
+    },
+    {
+        key: "cadre",
+        label: "Cadre",
+        getValue: (w: any, index: number) =>
+            w.cadre_name?.toLowerCase() ?? "—",
+    },
+    {
+        key: "role",
+        label: "Role",
+        getValue: (w: any, index: number) =>
+            w.role ?? "—",
+    },
+    {
+        key: "district",
+        label: "District",
+        getValue: (w: any) =>
+            w.metadata?.district ?? "—",
+    },
+    {
+        key: "status",
+        label: "Status",
+        getValue: (w: any) =>
+            w.metadata?.worker_status?.[1] ?? "—",
+    },
+    {
+        key: "trainings",
+        label: "Trainings",
+        getValue: (w: any) =>
+            Array.isArray(w.trainings)
+                ? w.trainings
+                : [],
+    },
+    {
+        key: "certifications",
+        label: "Certifications",
+        getValue: (w: any) =>
+            w.qualifications ?? "—",
+    },
+    {
+        key: "competencies",
+        label: "Competencies",
+        getValue: (w: any) =>
+            Array.isArray(w.metadata?.competencies)
+                ? w.metadata.competencies.join(", ")
+                : "—",
+    },
+];
 
-export function exportCSV(data: any[], name: string, selectedColumns: string[]) {
-    const formatted = data.map((w, i) => {
-        const row: any = {};
-        EXPORT_COLUMNS.forEach(c => {
-            if (!selectedColumns.includes(c.label)) return;
+export function exportCSV(
+    data: any[],
+    name: string,
+    selectedColumns: string[]
+) {
+    // Only export columns the user selected
+    const activeColumns = EXPORT_COLUMNS.filter(c =>
+        selectedColumns.includes(c.label)
+    );
 
-            let value = c.getValue(w, i);
-            if (Array.isArray(value)) value = value.join(", ");
-            row[c.label] = value ?? "";
-        });
-        return row;
+    // Escape CSV values safely
+    const escapeCSV = (value: any) => {
+        if (value === null || value === undefined) return "";
+
+        let str = String(value);
+
+        // Escape quotes
+        str = str.replace(/"/g, '""');
+
+        // Wrap in quotes if needed
+        if (/[",\n]/.test(str)) {
+            str = `"${str}"`;
+        }
+
+        return str;
+    };
+
+    // Build header row
+    const header = activeColumns
+        .map(c => escapeCSV(c.label))
+        .join(",");
+
+    // Build data rows
+    const rows = data.map((w, i) =>
+        activeColumns
+            .map(c => {
+                let value = c.getValue(w, i);
+
+                // ✅ Convert arrays (e.g. trainings) to CSV-safe string
+                if (Array.isArray(value)) {
+                    value = value.join(", ");
+                }
+
+                return escapeCSV(value ?? "");
+            })
+            .join(",")
+    );
+
+    // Combine CSV content
+    const csvContent = [header, ...rows].join("\n");
+
+    // Download file
+    const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
     });
 
-    const headers = Object.keys(formatted[0] || {});
-    const csv = [
-        headers.join(","),
-        ...formatted.map(row => headers.map(h => `"${row[h]}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${name}.csv`;
-    a.click();
+    link.href = url;
+    link.download = `${name}.csv`;
+    link.click();
+
     URL.revokeObjectURL(url);
+}
+
+function normalizeWorkerForExport(worker: any) {
+    return {
+        personnel_identifier:
+            worker.personnel_identifier ?? worker.personnel_id ?? "—",
+
+        name: `${worker.first_name ?? ""} ${worker.last_name ?? ""}`.trim(),
+
+        cadre_name: worker.cadre_name ?? "—",
+        role: worker.role ?? "—",
+        district: worker.metadata?.district ?? "—",
+
+        trainings: Array.isArray(worker.trainings)
+            ? worker.trainings
+            : [],
+
+        competencies: Array.isArray(worker.metadata?.competencies)
+            ? worker.metadata.competencies.join(", ")
+            : "—",
+
+        status: Array.isArray(worker.metadata?.worker_status)
+            ? worker.metadata.worker_status[1]
+            : "—",
+
+        qualifications: worker.qualifications ?? "—",
+    };
 }
 
 export function exportExcel(data: any[], name: string, selectedColumns: string[]) {
@@ -880,59 +1004,6 @@ export function exportPDF(data: any[], name: string, selectedColumns: string[]) 
 
     doc.save(`${name}.pdf`);
 }
-
-export const EXPORT_COLUMNS = [
-    {
-        key: "personnel_identifier",
-        label: "Worker ID",
-        getValue: (w: any) =>
-            w.personnel_identifier ?? w.personnel_id ?? "—",
-    },
-    {
-        key: "name",
-        label: "Name",
-        getValue: (w: any) =>
-            `${w.first_name ?? ""} ${w.last_name ?? ""}`.trim(),
-    },
-    {
-        key: "cadre",
-        label: "Cadre",
-        getValue: (w: any, index: number) =>
-            w.cadre_name?.toLowerCase() ?? "—",
-    },
-    {
-        key: "role",
-        label: "Role",
-        getValue: (w: any, index: number) =>
-            w.role ?? "—",
-    },
-    {
-        key: "district",
-        label: "District",
-        getValue: (w: any) =>
-            w.metadata?.district ?? "—",
-    },
-    {
-        key: "status",
-        label: "Status",
-        getValue: (w: any) =>
-            w.metadata?.worker_status?.[1] ?? "—",
-    },
-    {
-        key: "certifications",
-        label: "Certifications",
-        getValue: (w: any) =>
-            w.qualifications ?? "—",
-    },
-    {
-        key: "competencies",
-        label: "Competencies",
-        getValue: (w: any) =>
-            Array.isArray(w.metadata?.competencies)
-                ? w.metadata.competencies.join(", ")
-                : "—",
-    },
-];
 
 function pad(value: string, width: number) {
     return value.padEnd(width, " ");

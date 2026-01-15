@@ -13,8 +13,8 @@ type DeploymentMapProps = {
 };
 
 type DisplayMode =
-    | "Deployments: Deployed"
     | "HCW: All"
+    | "Deployments: Deployed"
     | "HCW: Employed"
     | "HCW: Unemployed"
     | "Deployments: Available";
@@ -23,7 +23,7 @@ export function DeploymentMap({ maximized, onToggleMaximize }: DeploymentMapProp
 
     const [activeDeployments, setActiveDeployments] = useState<Record<string, number>>({});
     const [workforceByDistrict, setWorkforceByDistrict] = useState<Record<string, any[]>>({});
-    const [displayMode, setDisplayMode] = useState<DisplayMode>("Deployments: Deployed");
+    const [displayMode, setDisplayMode] = useState<DisplayMode>("HCW: All");
     const [isLoading, setIsLoading] = useState(false);
     const [showMarkers, setShowMarkers] = useState(true);
     const [showLegend, setShowLegend] = useState(true);
@@ -49,10 +49,12 @@ export function DeploymentMap({ maximized, onToggleMaximize }: DeploymentMapProp
             const personnel = await api.listPersonnel();
             const grouped: Record<string, any[]> = {};
 
+            // Initialize all districts to empty arrays
+            districts.forEach(d => grouped[d.name] = []);
+
             personnel.forEach(p => {
                 const district = p.metadata?.district;
                 if (!district) return;
-                if (!grouped[district]) grouped[district] = [];
                 grouped[district].push(p);
             });
 
@@ -94,11 +96,11 @@ export function DeploymentMap({ maximized, onToggleMaximize }: DeploymentMapProp
        Color scale
     ---------------------------- */
     const getColor = (value: number) => {
-        if (value >= 26) return "#7f1d1d";
-        if (value >= 21) return "#b91c1c";
-        if (value >= 16) return "#dc2626";
-        if (value >= 11) return "#f97316";
-        if (value >= 6) return "#facc15";
+        if (value >= 251) return "#7f1d1d";
+        if (value >= 201) return "#b91c1c";
+        if (value >= 151) return "#dc2626";
+        if (value >= 101) return "#f97316";
+        if (value >= 51) return "#facc15";
         if (value >= 1) return "#86efac";
         return "#e5e7eb";
     };
@@ -135,12 +137,12 @@ export function DeploymentMap({ maximized, onToggleMaximize }: DeploymentMapProp
             </div>
             <div className="space-y-1">
                 <LegendItem color="#e5e7eb" label="0" />
-                <LegendItem color="#86efac" label="1 – 5" />
-                <LegendItem color="#facc15" label="6 – 10" />
-                <LegendItem color="#f97316" label="11 – 15" />
-                <LegendItem color="#dc2626" label="16 – 20" />
-                <LegendItem color="#b91c1c" label="21 – 25" />
-                <LegendItem color="#7f1d1d" label="26+" />
+                <LegendItem color="#86efac" label="1 – 50" />
+                <LegendItem color="#facc15" label="51 – 100" />
+                <LegendItem color="#f97316" label="101 – 150" />
+                <LegendItem color="#dc2626" label="151 – 200" />
+                <LegendItem color="#b91c1c" label="201 – 250" />
+                <LegendItem color="#7f1d1d" label="251+" />
             </div>
         </div>
     );
@@ -202,30 +204,31 @@ export function DeploymentMap({ maximized, onToggleMaximize }: DeploymentMapProp
                     >
                         {!isLoading && (
                             <GeoJSON
-                                key={displayMode}   // ensures re-render on display mode change
+                                key={displayMode} // remounts layer when displayMode changes
                                 data={malawiDistricts}
                                 style={geoJsonStyle}
                                 onEachFeature={(feature, layer) => {
                                     const district = feature.properties.name;
                                     const value = getDistrictValue(district);
 
-                                    // Show permanent marker if showMarkers is true
+                                    // Unbind previous tooltip
+                                    layer.unbindTooltip();
+
+                                    // Only bind tooltip if value > 0
                                     if (showMarkers && value > 0) {
-                                        layer.bindTooltip(
-                                            `${district}: ${value}`,
-                                            {
-                                                permanent: true,
-                                                direction: "center",
-                                                className: "district-tooltip",
-                                            }
-                                        );
-                                    } else {
-                                        layer.unbindTooltip();
+                                        layer.bindTooltip(`${district}: ${value}`, {
+                                            permanent: true,
+                                            direction: "center",
+                                            className: "district-tooltip",
+                                        });
                                     }
 
+                                    // Bind popup always (clickable)
                                     layer.bindPopup(`<strong>${district}</strong><br/>${value}`);
                                 }}
                             />
+
+
                         )}
 
                     </MapContainer>

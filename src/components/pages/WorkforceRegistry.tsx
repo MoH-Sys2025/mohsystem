@@ -88,6 +88,8 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [selectedColumns, setSelectedColumns] = useState(EXPORT_COLUMNS.map(c => c.label) // default: all columns selected
     );
 
+    const [exportKey, setExportKey] = useState(0);
+
     const { setSelectedMOHData } = useSelectedMOHData();
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -112,7 +114,8 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     };
 
     const toggleSelectAllWorkers = () => {
-        if (selectedWorkerIds.length === pageWorkers.length) {
+        if (pageWorkers.every(w => selectedWorkerIds.includes(w.id)))
+        {
             setSelectedWorkerIds([]);
         } else {
             setSelectedWorkerIds(pageWorkers.map(w => w.id));
@@ -132,52 +135,64 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
         "Actions": null,       // not sortable
     };
 
+    function getExportRows() {
+        if (selectedWorkerIds.length > 0) {
+            return sortedWorkers.filter(w =>
+                selectedWorkerIds.includes(w.id)
+            );
+        }
+
+        return sortedWorkers; // respects search + filters + sorting
+    }
+
     function handleExport() {
         if (!exportType) return;
 
-        const safeName = fileName
-            .trim()
-            .replace(/[^\w\-]+/g, "_")
-            .toLowerCase();
+        const rows = getExportRows();
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const safeName = `${fileName}_${timestamp}`;
 
         switch (exportType) {
             case "csv":
-                exportCSV(sortedWorkers, safeName, selectedColumns);
+                exportCSV(rows, safeName, selectedColumns);
                 break;
             case "excel":
-                exportExcel(sortedWorkers, safeName, selectedColumns);
+                exportExcel(rows, safeName, selectedColumns);
                 break;
             case "pdf":
-                exportPDF(sortedWorkers, safeName, selectedColumns);
+                exportPDF(rows, safeName, selectedColumns);
                 break;
             case "txt":
-                exportText(sortedWorkers, safeName, selectedColumns);
+                exportText(rows, safeName, selectedColumns);
                 break;
+        }
+
+        // 🔴 CRITICAL RESET
+        setExportType(null);
+    }
+
+    async function fetchPersonnel() {
+        setLoading(true);
+        try {
+            const data = await api.listPersonnel(); // batch-fetching version
+            const cadresData = Array.isArray(await api.listCadres(1000)) ? await api.listCadres(1000) : [];
+            setCadres(cadresData);
+
+            const mappedWorkers = data.map(worker => {
+                const cadre = cadresData.find(c => String(c.id) === String(worker.cadre_id));
+                return { ...worker, cadre_name: cadre?.name ?? "—" };
+            });
+
+            setPersonnel(mappedWorkers);
+        } catch (err: any) {
+            setError(err?.message ?? String(err));
+        } finally {
+            setLoading(false);
         }
     }
 
-
     useEffect(() => {
-        async function fetchPersonnel() {
-            setLoading(true);
-            try {
-                const data = await api.listPersonnel(); // batch-fetching version
-                const cadresData = Array.isArray(await api.listCadres(1000)) ? await api.listCadres(1000) : [];
-                setCadres(cadresData);
-
-                const mappedWorkers = data.map(worker => {
-                    const cadre = cadresData.find(c => String(c.id) === String(worker.cadre_id));
-                    return { ...worker, cadre_name: cadre?.name ?? "—" };
-                });
-
-                setPersonnel(mappedWorkers);
-            } catch (err: any) {
-                setError(err?.message ?? String(err));
-            } finally {
-                setLoading(false);
-            }
-        }
-
         fetchPersonnel();
     }, []);
 
@@ -228,13 +243,35 @@ const fieldMap: Record<string, string | null> = {
         return value;
     }
 
-    const filteredWorkers = workers.filter(worker => {
-        const haystack = Object.values(worker)
-            .map(normalizeForSearch)
-            .join(" ")
-            .toLowerCase();
-        return haystack.includes(searchTerm.toLowerCase());
+    const searchedWorkers = workers.filter(worker => {
+        const search = searchTerm.toLowerCase().trim();
+        if (!search) return true;
+
+        return [
+            worker.personnel_identifier,
+            worker.personnel_id,
+            worker.first_name,
+            worker.last_name,
+            worker.role,
+            worker.cadre_name,
+            worker.metadata?.district,
+        ]
+            .filter(Boolean)
+            .some(v => String(v).toLowerCase().includes(search));
     });
+
+    const filteredWorkers = searchedWorkers.filter(worker => {
+        if (!selectedFilter || !filterValue) return true;
+
+        const fieldValue = getField(worker, selectedFilter);
+
+        if (Array.isArray(fieldValue)) {
+            return fieldValue.map(String).includes(filterValue);
+        }
+
+        return String(fieldValue ?? "") === filterValue;
+    });
+
 
     const sortedWorkers = [...filteredWorkers].sort((a, b) => {
         if (!sortBy || !sortDir) return 0;
@@ -368,327 +405,323 @@ return (
             <Button className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg" variant="secondary" size="lg" onClick={()=>onNavigate('add worker')}>+ Add Health Worker</Button>
         </div>
 
-        {!loading && (
-            <>
-                <div className="grid grid-cols-6 md:grid-cols-6 gap-1 md:hidden">
-                    {[
-                        stats.total,
-                        stats.deployed,
-                        stats.available,
-                        stats.pending,
-                        stats.employed,
-                        stats.unemployed
-                    ].map((value, i) => (
-                        <div key={i} className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-1 bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-2 col-span-3  md:col-span-1 lg:col-span-2">
-                            <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Total HCW", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]}</span> <span className="text-black text-md">{[value][0]}</span>
-                        </div>
-                    ))}
-                </div>
-                <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden relative">
-                    <div className="md:p-6 p-2 py-3 border-b border-neutral-200 space-y-1">
-                        <div className="grid-cols-2 md:grid-cols-6 gap-1 hidden md:grid">
-                            {[
-                                stats.total,
-                                stats.deployed,
-                                stats.available,
-                                stats.pending,
-                                stats.employed,
-                                stats.unemployed,
-                            ].map((value, i) => (
-                                <div key={i} className="bg-gray-100  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
-                                    <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center justify-between gap-1 mx-2">
-                                        <span className="flex flex-row items-center gap-2 justify-start">{statsIcons[i] ?? <Circle size={15} />}{["Total HCW", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]}</span> <span className="text-black text-md"> {[value][0]}</span>
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-12 gap-1 md:gap-2">
-                            <div className="relative sm:col-span-12 md:col-span-6 lg:col-span-7 col-span-12">
-
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                                <input type="text"
-                                    placeholder="Search by name, ID, or role..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm"
-                                />
+        <>
+            <div className="grid grid-cols-6 md:grid-cols-6 gap-1 md:hidden">
+                {[
+                    stats.total,
+                    stats.deployed,
+                    stats.available,
+                    stats.pending,
+                    stats.employed,
+                    stats.unemployed
+                ].map((value, i) => (
+                    <div key={i} className="text-sm text-neutral-800 mb-1 flex flex-row items-center px-2 justify-between gap-1 bg-gray-200  cursor-pointer rounded-xl border border-neutral-200 p-2 sm:col-span-2 col-span-3  md:col-span-1 lg:col-span-2">
+                        <span className="gap-1 flex flex-row items-center">{statsIcons[i] ?? <Circle size={18} />} {["Total HCW", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]}</span> <span className="text-black text-md">{[value][0]}</span>
+                    </div>
+                ))}
+            </div>
+            <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden relative">
+                <div className="md:p-6 p-2 py-3 border-b border-neutral-200 space-y-1">
+                    <div className="grid-cols-2 md:grid-cols-6 gap-1 hidden md:grid">
+                        {[
+                            stats.total,
+                            stats.deployed,
+                            stats.available,
+                            stats.pending,
+                            stats.employed,
+                            stats.unemployed,
+                        ].map((value, i) => (
+                            <div key={i} className="bg-gray-100  cursor-pointer rounded-xl border border-neutral-200 p-2 col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
+                                <p className="text-sm text-neutral-800 mb-1 flex flex-row items-center justify-between gap-1 mx-2">
+                                    <span className="flex flex-row items-center gap-2 justify-start">{statsIcons[i] ?? <Circle size={15} />}{["Total HCW", "Deployed", "Available", "Pending", "Employed", "Unemployed"][i]}</span> <span className="text-black text-md"> {[value][0]}</span>
+                                </p>
                             </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-12 gap-1 md:gap-2">
+                        <div className="relative sm:col-span-12 md:col-span-6 lg:col-span-7 col-span-12">
 
-                            <div className="col-span-12 grid grid-cols-3 md:grid-cols-4 wrap-anywhere flex-wrap flex-row md:col-span-6 lg:col-span-5 justify-start items-center gap-1 lg:gap-2">
-                                <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-                                    <PopoverTrigger className="hidden" asChild>
-                                        <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
-                                            <Filter size={8} className="w-8 h-8" />
-                                            Filter
-                                        </Button>
-                                    </PopoverTrigger>
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                            <input type="text"
+                                   placeholder="Search by name, ID, or role..."
+                                   value={searchTerm}
+                                   onChange={(e) => setSearchTerm(e.target.value)}
+                                   className="w-full pl-10 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm"
+                            />
+                        </div>
 
-                                    <PopoverContent
-                                        align="start"
-                                        sideOffset={8}
-                                        className="w-50 max-h-80 overflow-y-auto p-1 bg-white z-10 shadow-md rounded-md"
-                                    >
-                                        {/* STEP 1: Choose filter */}
-                                        {!selectedFilter && (
-                                            <div className="space-y-0">
-                                                {filterOptions.map((opt) => (
-                                                    <Button
-                                                        key={opt.key}
-                                                        variant="ghost"
+                        <div className="col-span-12 grid grid-cols-3 md:grid-cols-4 wrap-anywhere flex-wrap flex-row md:col-span-6 lg:col-span-5 justify-start items-center gap-1 lg:gap-2">
+                            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                                <PopoverTrigger className="hidden" asChild>
+                                    <Button variant="ghost" className="px-3 flex flex-row gap-2 py-2 border font-normal text-xs items-center rounded-md">
+                                        <Filter size={8} className="w-8 h-8" />
+                                        Filter
+                                    </Button>
+                                </PopoverTrigger>
 
-                                                        onClick={() => setSelectedFilter(opt.key)}
-                                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                                    >
-                                                        {opt.label}
-                                                    </Button>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* STEP 2: Choose value */}
-                                        {selectedFilter && !filterValue && (
-                                            <div className="space-y-1">
+                                <PopoverContent
+                                    align="start"
+                                    sideOffset={8}
+                                    className="w-50 max-h-80 overflow-y-auto p-1 bg-white z-10 shadow-md rounded-md"
+                                >
+                                    {/* STEP 1: Choose filter */}
+                                    {!selectedFilter && (
+                                        <div className="space-y-0">
+                                            {filterOptions.map((opt) => (
                                                 <Button
+                                                    key={opt.key}
                                                     variant="ghost"
-                                                    onClick={() => setSelectedFilter(null)}
-                                                    className="text-xs justify-start flex text-neutral-500 underline mb-2"
+
+                                                    onClick={() => setSelectedFilter(opt.key)}
+                                                    className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
                                                 >
-                                                    Back
+                                                    {opt.label}
                                                 </Button>
+                                            ))}
+                                        </div>
+                                    )}
 
-                                                {Array.from(
-                                                    new Set(
-                                                        workers
-                                                            .flatMap((w) => {
-                                                                const val = getField(w, selectedFilter);
-                                                                return Array.isArray(val) ? val : [val];
-                                                            })
-                                                            .filter(Boolean)
-                                                    )
-                                                ).map((value) => (
-                                                    <Button
-                                                        key={String(value)}
-                                                        onClick={() => {
-                                                            setFilterValue(String(value));
-                                                            setFilterOpen(false); // auto close
-                                                        }}
-                                                        variant="ghost"
-                                                        className="w-full flex justify-start text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100"
-                                                    >
-                                                        {String(value)}
-                                                    </Button>
-                                                ))}
-                                            </div>
-                                        )}
+                                    {/* STEP 2: Choose value */}
+                                    {selectedFilter && !filterValue && (
+                                        <div className="space-y-1">
+                                            <Button
+                                                variant="ghost"
+                                                onClick={() => setSelectedFilter(null)}
+                                                className="text-xs justify-start flex text-neutral-500 underline mb-2"
+                                            >
+                                                Back
+                                            </Button>
 
-                                        {/* STEP 3: Selected */}
-                                        {selectedFilter && filterValue && (
-                                            <div className="flex items-center justify-between">
+                                            {Array.from(
+                                                new Set(
+                                                    workers
+                                                        .flatMap((w) => {
+                                                            const val = getField(w, selectedFilter);
+                                                            return Array.isArray(val) ? val : [val];
+                                                        })
+                                                        .filter(Boolean)
+                                                )
+                                            ).map((value) => (
+                                                <Button
+                                                    key={String(value)}
+                                                    onClick={() => {
+                                                        setFilterValue(String(value));
+                                                        setFilterOpen(false); // auto close
+                                                    }}
+                                                    variant="ghost"
+                                                    className="w-full flex justify-start text-left px-3 py-2 text-sm rounded-md hover:bg-neutral-100"
+                                                >
+                                                    {String(value)}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* STEP 3: Selected */}
+                                    {selectedFilter && filterValue && (
+                                        <div className="flex items-center justify-between">
                                 <span className="text-sm text-neutral-700">
                                   {selectedFilter}: <strong>{filterValue}</strong>
                                 </span>
 
-                                                <Button
-                                                    onClick={() => {
-                                                        setSelectedFilter(null);
-                                                        setFilterValue(null);
-                                                    }}
-                                                    variant="ghost"
-                                                    className="text-xs text-neutral-500 underline "
-                                                >
-                                                    Clear
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </PopoverContent>
-                                </Popover>
+                                            <Button
+                                                onClick={() => {
+                                                    setSelectedFilter(null);
+                                                    setFilterValue(null);
+                                                }}
+                                                variant="ghost"
+                                                className="text-xs text-neutral-500 underline "
+                                            >
+                                                Clear
+                                            </Button>
+                                        </div>
+                                    )}
+                                </PopoverContent>
+                            </Popover>
 
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className="justify-start text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
-                                            <Download className="w-4 h-4" />
-                                            Export
-                                        </Button>
-                                    </PopoverTrigger>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="justify-start text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
+                                        <Download className="w-4 h-4" />
+                                        Export
+                                    </Button>
+                                </PopoverTrigger>
 
-                                    <PopoverContent align="start" className="w-40 p-1 pb-2 z-10 bg-white shadow-md rounded-sm">
-                                        <Button
-                                            onClick={() => {
-                                                setExportType("pdf");
-                                                setExportDialogOpen(true);
-                                            }}
-                                            variant="ghost"
-                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                        >
-                                            <FileText className="w-4 h-4" />
-                                            PDF
-                                        </Button>
+                                <PopoverContent align="start" className="w-40 p-1 pb-2 z-10 bg-white shadow-md rounded-sm">
+                                    <Button
+                                        onClick={() => {
+                                            setExportType("pdf");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        PDF
+                                    </Button>
 
-                                        <Button
-                                            onClick={() => {
-                                                setExportType("csv");
-                                                setExportDialogOpen(true);
-                                            }}
-                                            variant="ghost"
-                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                        >
-                                            <File className="w-4 h-4" />
-                                            CSV
-                                        </Button>
+                                    <Button
+                                        onClick={() => {
+                                            setExportType("csv");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                    >
+                                        <File className="w-4 h-4" />
+                                        CSV
+                                    </Button>
 
-                                        <Button
-                                            onClick={() => {
-                                                setExportType("excel");
-                                                setExportDialogOpen(true);
-                                            }}
-                                            variant="ghost"
-                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                        >
-                                            <FileSpreadsheet className="w-4 h-4" />
-                                            Excel
-                                        </Button>
-                                        <Button
-                                            onClick={() => {
-                                                setExportType("txt");
-                                                setExportDialogOpen(true);
-                                            }}
-                                            variant="ghost"
-                                            className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
-                                        >
-                                            <FileSpreadsheet className="w-4 h-4" />
-                                            Text
-                                        </Button>
-                                    </PopoverContent>
-                                </Popover>
+                                    <Button
+                                        onClick={() => {
+                                            setExportType("excel");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                    >
+                                        <FileSpreadsheet className="w-4 h-4" />
+                                        Excel
+                                    </Button>
+                                    <Button
+                                        onClick={() => {
+                                            setExportType("txt");
+                                            setExportDialogOpen(true);
+                                        }}
+                                        variant="ghost"
+                                        className="w-full justify-start text-left px-3 font-normal  text-xs rounded-md hover:bg-neutral-100"
+                                    >
+                                        <FileSpreadsheet className="w-4 h-4" />
+                                        Text
+                                    </Button>
+                                </PopoverContent>
+                            </Popover>
 
-                                <Button onClick={async ()=>{
-                                    setLoading(true)
-                                    const data = Array.isArray(await api.listPersonnel()) ? await api.listPersonnel(1000) : [];
-                                    setPersonnel(data);
-                                    setLoading(false)
-                                }} variant="outline" className=" justify-start md:ml-auto text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
-                                    <Loader2 className="w-2 h-2" /> Reload
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={(selectedWorkerIds.length <= 0)}
-                                    onClick={() => setDeleteHCWDia(true)}
-                                    className={`ml - 2`}
-                                >
-                                    <Trash2 className="w-4 h-4 text-red-600" />
-                                    ({selectedWorkerIds.length})
-                                </Button>
-                            </div>
-
+                            <Button disabled={loading} onClick={
+                                ()=> fetchPersonnel()
+                            } variant="outline" className=" justify-start md:ml-auto text-left px-3 font-normal text-xs rounded-md hover:bg-neutral-100">
+                                <Loader2 className={`w - 2 h-2 ${loading ? 'animate-spin text-red-500' : 'animate-none text-neutral-800'}`} /> Reload
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={(selectedWorkerIds.length <= 0)}
+                                onClick={() => setDeleteHCWDia(true)}
+                                className={`ml - 2`}
+                            >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                                ({selectedWorkerIds.length})
+                            </Button>
                         </div>
 
                     </div>
 
-                    <div className="overflow-x-auto overflow-y-auto max-h-[600px] border border-neutral-200">
-                        <div className={`overflow-x-scroll truncate`} style={{maxWidth: size.width-20, width: contentWidth-20 || undefined }}>
+                </div>
 
-                            <Table className="w-full min-w-[800px]">
-                                <TableHeader>
-                                    <TableRow className="z-3">
-                                        {[
-                                            "Worker ID",
-                                            "Name",
-                                            "Cadre",
-                                            "Role",
-                                            "District",
-                                            "Trainings",
-                                            "Competencies",
-                                            "Status",
-                                            "Certifications",
-                                            "Actions",
-                                        ].map((h) => (
-                                            <TableHead
-                                                key={h}
-                                                className={`sticky top-0 text-xs uppercase tracking-wider px-3 py-2 text-left
+                <div className="overflow-x-auto overflow-y-auto max-h-[600px] border border-neutral-200">
+                    <div className={`overflow-x-scroll truncate`} style={{maxWidth: size.width-20, width: contentWidth-20 || undefined }}>
+
+                        <Table className="w-full min-w-[800px]">
+                            <TableHeader>
+                                <TableRow className="z-3">
+                                    {[
+                                        "Worker ID",
+                                        "Name",
+                                        "Cadre",
+                                        "Role",
+                                        "District",
+                                        "Trainings",
+                                        "Competencies",
+                                        "Status",
+                                        "Certifications",
+                                        "Actions",
+                                    ].map((h) => (
+                                        <TableHead
+                                            key={h}
+                                            className={`sticky top-0 text-xs uppercase tracking-wider px-3 py-2 text-left
                                                 ${[""].includes(h) ? "hidden md:table-cell" : ""}
                                                 ${h === "Actions" ? "sticky right-0 z-2 bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]" : ""}
                                               `}
-                                                style={{ minWidth: h === "Name" ? 100 : 60 }}>
-                                                {HEADER_TO_SORT_KEY[h] ? (
-                                                    <SortHeader label={
-                                                        (h === "Worker ID") ? <span className="flex flex-row items-center gap-1"><input
-                                                            type="checkbox"
-                                                            checked={
-                                                                sortedWorkers.length > 0 &&
-                                                                selectedWorkerIds.length === sortedWorkers.length
-                                                            }
-                                                            onChange={toggleSelectAllWorkers}
-                                                        /> {h} </span> : h
-                                                    } columnKey={HEADER_TO_SORT_KEY[h]!} />
-                                                ) : (
-                                                    <span>{h}</span>
-                                                )}
+                                            style={{ minWidth: h === "Name" ? 100 : 60 }}>
+                                            {HEADER_TO_SORT_KEY[h] ? (
+                                                <SortHeader label={
+                                                    (h === "Worker ID") ? <span className="flex flex-row items-center gap-1"><input
+                                                        type="checkbox"
+                                                        checked={
+                                                            sortedWorkers.length > 0 &&
+                                                            selectedWorkerIds.length === sortedWorkers.length
+                                                        }
+                                                        onChange={toggleSelectAllWorkers}
+                                                    /> {h} </span> : h
+                                                } columnKey={HEADER_TO_SORT_KEY[h]!} />
+                                            ) : (
+                                                <span>{h}</span>
+                                            )}
 
-                                            </TableHead>
-                                        ))}
-                                    </TableRow>
-                                </TableHeader>
+                                        </TableHead>
+                                    ))}
+                                </TableRow>
+                            </TableHeader>
 
-                                <TableBody>
-                                    {pageWorkers.map(worker => (
-                                        <TableRow key={worker.id} className="hover:bg-neutral-50">
-                                            <TableCell className="px-3 py-1 text-xs whitespace-nowrap gap-1 flex flex-row items-center">
-                                                <Input
-                                                    type="checkbox"
-                                                    className="scale-[0.6]"
-                                                    checked={selectedWorkerIds.includes(worker.id)}
-                                                    onChange={() => toggleWorkerSelection(worker.id)}
-                                                />
-                                                {worker.personnel_identifier ?? worker.personnel_id ?? "—"}
-                                            </TableCell>
+                            <TableBody>
+                                {pageWorkers.map(worker => (
+                                    <TableRow key={worker.id} className="hover:bg-neutral-50">
+                                        <TableCell className="px-3 py-1 text-xs whitespace-nowrap gap-1 flex flex-row items-center">
+                                            <Input
+                                                type="checkbox"
+                                                className="scale-[0.6]"
+                                                checked={selectedWorkerIds.includes(worker.id)}
+                                                onChange={() => toggleWorkerSelection(worker.id)}
+                                            />
+                                            {worker.personnel_identifier ?? worker.personnel_id ?? "—"}
+                                        </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs">
-                                                <div className="flex items-center gap-3">
+                                        <TableCell className="px-3 py-1 text-xs">
+                                            <div className="flex items-center gap-3">
                                                     <span className="text-sm font-medium text-neutral-900">
                                                       {worker.first_name} {worker.last_name}
                                                     </span>
-                                                </div>
-                                            </TableCell>
+                                            </div>
+                                        </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs">
-                                                {worker.cadre_name}
-                                            </TableCell>
+                                        <TableCell className="px-3 py-1 text-xs">
+                                            {worker.cadre_name}
+                                        </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs">
-                                                <div className="max-w-[200px] overflow-x-auto whitespace-nowrap overflow-y-hidden">
-                                                    {worker.role ?? "—"}</div>
-                                            </TableCell>
+                                        <TableCell className="px-3 py-1 text-xs">
+                                            <div className="max-w-[200px] overflow-x-auto whitespace-nowrap overflow-y-hidden">
+                                                {worker.role ?? "—"}</div>
+                                        </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs">
-                                                {worker.metadata.district ?? "—"}
-                                            </TableCell>
+                                        <TableCell className="px-3 py-1 text-xs">
+                                            {worker.metadata.district ?? "—"}
+                                        </TableCell>
 
-                                            <TableCell  className="px-3 py-1 text-xs space-x-2 items-center max-w-60 border">
-                                                <div className="max-w-[200px] overflow-x-auto whitespace-nowrap overflow-y-hidden">
-                                                    {Array.isArray(worker.trainings) && worker.trainings.length > 0 ? (
-                                                        worker.trainings.map((t, index) => <span className="border-green-300 bg-green-100 border px-1 rounded-sm" key={index}>{t}</span>)
-                                                    ) : (
-                                                        <span>—</span> // fallback if no trainings
-                                                    )}
-                                                </div>
-                                            </TableCell>
+                                        <TableCell  className="px-3 py-1 text-xs space-x-2 items-center max-w-60 border">
+                                            <div className="max-w-[200px] overflow-x-auto whitespace-nowrap overflow-y-hidden">
+                                                {Array.isArray(worker.trainings) && worker.trainings.length > 0 ? (
+                                                    worker.trainings.map((t, index) => <span className="border-green-300 bg-green-100 border px-1 rounded-sm" key={index}>{t}</span>)
+                                                ) : (
+                                                    <span>—</span> // fallback if no trainings
+                                                )}
+                                            </div>
+                                        </TableCell>
 
-                                            <TableCell className="px-2 py-1 text-xs">
-                                                <div className="flex flex-wrap gap-1 max-h-6 overflow-y-scroll">
-                                                    {Array.isArray(worker.metadata?.competencies) &&
-                                                        worker.metadata.competencies.map((c: string, i: number) => (
-                                                            <span
-                                                                key={i}
-                                                                className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded-md text-xs"
-                                                            >
+                                        <TableCell className="px-2 py-1 text-xs">
+                                            <div className="flex flex-wrap gap-1 max-h-6 overflow-y-scroll">
+                                                {Array.isArray(worker.metadata?.competencies) &&
+                                                    worker.metadata.competencies.map((c: string, i: number) => (
+                                                        <span
+                                                            key={i}
+                                                            className="px-2 py-1 bg-neutral-100 text-neutral-700 rounded-md text-xs"
+                                                        >
                   {c}
                 </span>
-                                                        ))}
-                                                </div>
-                                            </TableCell>
+                                                    ))}
+                                            </div>
+                                        </TableCell>
 
-                                            <TableCell className="px-3 py-1 text-xs">
+                                        <TableCell className="px-3 py-1 text-xs">
           <span
               className={` px-2 py-1 inline-flex rounded-full text-xs font-medium ${
                   worker.metadata?.worker_status[1] === "Deployed"
@@ -702,73 +735,71 @@ return (
           >
             {worker.metadata.worker_status[1] ?? "—"}
           </span>
-                                            </TableCell>
-                                            <TableCell className="px-3 py-1 text-xs">
-                                                {worker.qualifications ?? "—"}
-                                            </TableCell>
+                                        </TableCell>
+                                        <TableCell className="px-3 py-1 text-xs">
+                                            {worker.qualifications ?? "—"}
+                                        </TableCell>
 
-                                            <TableCell className=" sticky right-0 z-10 px-3 py-1 text-xs bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
-                                                <Popover>
-                                                    <PopoverTrigger asChild placement="top">
-                                                        <Button variant="outline" className="p-1.5 hover:bg-neutral-100 rounded-md">
-                                                            <MoreVertical className="w-4 h-4 text-neutral-600" />
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="p-2 z-11 mr-26 bg-white shadow-md border border-gray-200 w-35 rounded-sm ml-auto">
-                                                        <Button onClick={()=> {setDeleteHCWDia(true); setSelectedHCW(worker)}} variant="ghost" className="font-normal flex cursor-pointer w-full justify-start items-center gap-2">
-                                                            <Trash2  className="w-4 h-4 text-red-600" /> Delete
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            className="flex justify-start cursor-pointer items-center gap-2 font-normal"
-                                                            onClick={() => {
-                                                                setSelectedMOHData(worker);
-                                                                onNavigate("worker profile");
-                                                            }}
-                                                        >
-                                                            <User2 size={11} className="text-xs text-gray-600" /> View
-                                                            profile
-                                                        </Button>
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-neutral-200">
-                        <p className="text-sm text-neutral-600">
-                            Showing {filteredWorkers.length} of {workers.length} workers
-                        </p>
-                        <div className="flex justify-between items-center px-6 py-2 bg-white border-t border-neutral-200">
-                            <Button
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(prev => prev - 1)}
-                                variant="outline"
-                            >
-                                Previous
-                            </Button>
-
-                            <span>Page {currentPage} of {Math.ceil(filteredWorkers.length / pageSize)}</span>
-
-                            <Button
-                                disabled={currentPage === Math.ceil(filteredWorkers.length / pageSize)}
-                                onClick={() => setCurrentPage(prev => prev + 1)}
-                                variant="outline"
-                            >
-                                Next
-                            </Button>
-                        </div>
-
+                                        <TableCell className=" sticky right-0 z-10 px-3 py-1 text-xs bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)]">
+                                            <Popover>
+                                                <PopoverTrigger asChild placement="top">
+                                                    <Button variant="outline" className="p-1.5 hover:bg-neutral-100 rounded-md">
+                                                        <MoreVertical className="w-4 h-4 text-neutral-600" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="p-2 z-11 mr-26 bg-white shadow-md border border-gray-200 w-35 rounded-sm ml-auto">
+                                                    <Button onClick={()=> {setDeleteHCWDia(true); setSelectedHCW(worker)}} variant="ghost" className="font-normal flex cursor-pointer w-full justify-start items-center gap-2">
+                                                        <Trash2  className="w-4 h-4 text-red-600" /> Delete
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="flex justify-start cursor-pointer items-center gap-2 font-normal"
+                                                        onClick={() => {
+                                                            setSelectedMOHData(worker);
+                                                            onNavigate("worker profile");
+                                                        }}
+                                                    >
+                                                        <User2 size={11} className="text-xs text-gray-600" /> View
+                                                        profile
+                                                    </Button>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                 </div>
-            </>
-        )}
-        {loading && <div className="h-full mt-40 w-full flex justify-center items-center"><Loader2 className="animate-spin ease-linear" /></div>}
-        <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+
+                <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-neutral-200">
+                    <p className="text-sm text-neutral-600">
+                        Showing {filteredWorkers.length} of {workers.length} workers
+                    </p>
+                    <div className="flex justify-between items-center px-6 py-2 bg-white border-t border-neutral-200">
+                        <Button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                            variant="outline"
+                        >
+                            Previous
+                        </Button>
+
+                        <span>Page {currentPage} of {Math.ceil(filteredWorkers.length / pageSize)}</span>
+
+                        <Button
+                            disabled={currentPage === Math.ceil(filteredWorkers.length / pageSize)}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            variant="outline"
+                        >
+                            Next
+                        </Button>
+                    </div>
+
+                </div>
+            </div>
+        </>
+        <Dialog key={exportKey} open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
@@ -778,22 +809,24 @@ return (
 
                 <div className="mt-4 space-y-1">
                     <p className="text-sm font-medium">Select Columns</p>
-                    {EXPORT_COLUMNS.map(c => (
-                        <label key={c.label} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={selectedColumns.includes(c.label)}
-                                onChange={(e) => {
-                                    if (e.target.checked) {
-                                        setSelectedColumns(prev => [...prev, c.label]);
-                                    } else {
-                                        setSelectedColumns(prev => prev.filter(l => l !== c.label));
-                                    }
-                                }}
-                            />
-                            <span className="text-sm">{c.label}</span>
-                        </label>
-                    ))}
+                    <div className="flex flex-wrap flex-row gap-2 space-y-2">
+                        {EXPORT_COLUMNS.map(c => (
+                            <label key={c.label} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedColumns.includes(c.label)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedColumns(prev => [...prev, c.label]);
+                                        } else {
+                                            setSelectedColumns(prev => prev.filter(l => l !== c.label));
+                                        }
+                                    }}
+                                />
+                                <span className="text-sm">{c.label}</span>
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="space-y-2">
@@ -816,8 +849,8 @@ return (
                         disabled={!fileName.trim()}
                         variant="outline"
                         onClick={() => {
-                            handleExport(); // 🔹 Make sure this function receives the current filename
-                            setExportDialogOpen(false);
+                            handleExport();
+                            setTimeout(() => setExportDialogOpen(false), 200);
                         }}
                     >
                         Download

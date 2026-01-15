@@ -55,30 +55,65 @@ export function WorkforceChart() {
         personnel: [],
     });
 
+    async function fetchAllRows<T>(
+        table: string,
+        buildQuery: (q: any) => any,
+        pageSize = 1000
+    ): Promise<T[]> {
+        let page = 0;
+        let all: T[] = [];
+
+        while (true) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+
+            const query = buildQuery(
+                supabase
+                    .from(table)
+                    .select("*")
+                    .range(from, to) // ✅ range AFTER select (v1)
+            );
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+
+            all = all.concat(data);
+            if (data.length < pageSize) break;
+
+            page++;
+        }
+
+        return all;
+    }
+
+
     /* ---------------- Fetch available years ---------------- */
     useEffect(() => {
         const fetchYears = async () => {
-            const { data, error } = await supabase
-                .from("deployments")
-                .select("created_at");
+            try {
+                const deployments = await fetchAllRows<{ created_at: string }>(
+                    "deployments",
+                    q => q.select("created_at")
+                );
 
-            if (error) {
-                console.error(error);
-                return;
-            }
+                const uniqueYears = Array.from(
+                    new Set(deployments.map(d => new Date(d.created_at).getFullYear()))
+                ).sort((a, b) => b - a);
 
-            const uniqueYears = Array.from(
-                new Set(data.map(d => new Date(d.created_at).getFullYear()))
-            ).sort((a, b) => b - a);
-
-            if (uniqueYears.length) {
-                setYears(uniqueYears);
-                setYear(uniqueYears[0]);
+                if (uniqueYears.length) {
+                    setYears(uniqueYears);
+                    setYear(uniqueYears[0]); // latest year
+                }
+            } catch (err) {
+                console.error(err);
             }
         };
 
         fetchYears();
     }, []);
+
 
     /* ---------------- Fetch chart data ---------------- */
     useEffect(() => {
@@ -87,58 +122,54 @@ export function WorkforceChart() {
         const fetchData = async () => {
             setLoading(true);
 
-            // Personnel up to end of year
-            const { data: personnel, error: personnelError } = await supabase
-                .from("personnel")
-                .select("created_at")
-                .lte("created_at", `${year}-12-31`);
+            try {
+                const personnel = await fetchAllRows<{ created_at: string }>(
+                    "personnel",
+                    q => q
+                        .select("created_at")
+                        .lte("created_at", `${year}-12-31`)
+                );
 
-            if (personnelError) {
-                console.error(personnelError);
-                setLoading(false);
-                return;
-            }
+                const deployments = await fetchAllRows<{ created_at: string }>(
+                    "deployments",
+                    q => q
+                        .select("created_at")
+                        .eq("status", "Deployed")
+                        .gte("created_at", `${year}-01-01`)
+                        .lte("created_at", `${year}-12-31`)
+                );
 
-            // Deployments for selected year
-            const { data: deployments, error: deploymentsError } = await supabase
-                .from("deployments")
-                .select("created_at")
-                .eq("status", "Deployed")
-                .gte("created_at", `${year}-01-01`)
-                .lte("created_at", `${year}-12-31`);
-
-            if (deploymentsError) {
-                console.error(deploymentsError);
-                setLoading(false);
-                return;
-            }
-
-            const deployedPerMonth = Array(12).fill(0);
-            deployments?.forEach(dep => {
-                const monthIndex = new Date(dep.created_at).getMonth();
-                deployedPerMonth[monthIndex] += 1;
-            });
-
-            const isCurrentYear = year === currentYear;
-            const lastMonthIndex = isCurrentYear ? currentMonthIndex : 11;
-
-            const chartData: ChartData[] = months
-                .slice(0, lastMonthIndex + 1)
-                .map((month, idx) => {
-                    const endOfMonth = new Date(year, idx + 1, 0, 23, 59, 59);
-                    const personnelUpToMonth =
-                        personnel?.filter(p => new Date(p.created_at) <= endOfMonth).length ?? 0;
-
-                    return {
-                        month,
-                        deployed: deployedPerMonth[idx],
-                        available: Math.max(personnelUpToMonth - deployedPerMonth[idx], 0),
-                    };
+                const deployedPerMonth = Array(12).fill(0);
+                deployments.forEach(dep => {
+                    deployedPerMonth[new Date(dep.created_at).getMonth()]++;
                 });
 
-            setData(chartData);
-            setLoading(false);
+                const isCurrentYear = year === currentYear;
+                const lastMonthIndex = isCurrentYear ? currentMonthIndex : 11;
+
+                const chartData: ChartData[] = months
+                    .slice(0, lastMonthIndex + 1)
+                    .map((month, idx) => {
+                        const endOfMonth = new Date(year, idx + 1, 0, 23, 59, 59);
+                        const personnelUpToMonth = personnel.filter(
+                            p => new Date(p.created_at) <= endOfMonth
+                        ).length;
+
+                        return {
+                            month,
+                            deployed: deployedPerMonth[idx],
+                            available: Math.max(personnelUpToMonth - deployedPerMonth[idx], 0),
+                        };
+                    });
+
+                setData(chartData);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
         };
+
 
         fetchData();
     }, [year]);
@@ -148,18 +179,22 @@ export function WorkforceChart() {
         const start = new Date(year, monthIndex, 1);
         const end = new Date(year, monthIndex + 1, 0, 23, 59, 59);
 
-        const { data: personnel } = await supabase
-            .from("personnel")
-            .select("id, first_name, last_name, created_at")
-            .lte("created_at", end.toISOString());
+        const personnel = await fetchAllRows<any>(
+            "personnel",
+            q => q
+                .select("id, first_name, last_name, created_at")
+                .lte("created_at", end.toISOString())
+        );
 
-        const { data: deployed } = await supabase
-            .from("deployments")
-            .select("personnel_id")
-            .eq("status", "Deployed")
-            .gte("created_at", start.toISOString())
-            .lte("created_at", end.toISOString());
 
+        const deployed = await fetchAllRows<any>(
+            "deployments",
+            q => q
+                .select("personnel_id")
+                .eq("status", "Deployed")
+                .gte("created_at", start.toISOString())
+                .lte("created_at", end.toISOString())
+        );
         const deployedIds = new Set(deployed?.map(d => d.personnel_id));
         const available = personnel?.filter(p => !deployedIds.has(p.id)) ?? [];
 
