@@ -30,6 +30,9 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
     const [activeOutb, setActiveOutbreaks] = useState<number>(0);
     const [activeCounts, setActiveCounts] = useState<number[]>([]);
     const [outbreakInfo, setOutbreakInfo] = useState<any[]>([]);
+
+    const { ref, size } = useElementSize<HTMLDivElement>();
+    const contentWidth = size.width - size.paddingLeft - size.paddingRight;
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -93,7 +96,7 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
 
 
   return (
-    <div className="space-y-8 p-6">
+    <div ref={ref} className="space-y-8 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -123,46 +126,47 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
           <h2 className="text-neutral-900">All Deployments</h2>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Deployment ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Outbreak/Response</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">District</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Workers</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Start Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">End Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200 bg-white">
-            {(uniqueDeployed || []).map((deploy, index) => {
-                const outbreak = outbreakLookup[deploy.outbreak_id]; // get outbreak by outbreak_id
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px] border border-neutral-200">
+              <div className={`overflow-x-scroll truncate`} style={{maxWidth: size.width-20, width: contentWidth-20 || undefined }}>
+                  <table className="w-full">
+                      <thead className="bg-neutral-50 border-b border-neutral-200">
+                      <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Deployment ID</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Outbreak/Response</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">District</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Workers</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Start Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">End Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-200 bg-white">
+                      {(uniqueDeployed || []).map((deploy, index) => {
+                          const outbreak = outbreakLookup[deploy.outbreak_id]; // get outbreak by outbreak_id
 
-                return (
-                    <tr key={deploy.deployment_id} className="hover:bg-neutral-50 transition-colors">
-                        <td className="px-6 py-4">
-                            <span className="text-sm text-neutral-900">{deploy.deployment_id}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                            <p className="text-sm font-medium text-neutral-900">{outbreak?.disease}</p>
-                            <p className="text-xs text-neutral-500">{deploy.deploy_status}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                            <span className="text-sm text-neutral-600">{outbreak?.district || "—"}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                            <span className="text-sm text-neutral-600">{activeCounts[index] || 0}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                            <span className="text-sm text-neutral-600">{deploy.start_date}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                            <span className="text-sm text-neutral-600">{deploy.end_date || "—"}</span>
-                        </td>
-                        <td className="px-6 py-4">
+                          return (
+                              <tr key={deploy.deployment_id} className="hover:bg-neutral-50 transition-colors">
+                                  <td className="px-6 py-4">
+                                      <span className="text-sm text-neutral-900">{deploy.deployment_id}</span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                      <p className="text-sm font-medium text-neutral-900">{outbreak?.disease}</p>
+                                      <p className="text-xs text-neutral-500">{deploy.deploy_status}</p>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                      <span className="text-sm text-neutral-600">{outbreak?.district || "—"}</span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                      <span className="text-sm text-neutral-600">{activeCounts[index] || 0}</span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                      <span className="text-sm text-neutral-600">{deploy.start_date}</span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                      <span className="text-sm text-neutral-600">{deploy.end_date || "—"}</span>
+                                  </td>
+                                  <td className="px-6 py-4">
         <span
             className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
                 deploy.status === 'Active'
@@ -172,36 +176,37 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
         >
           {deploy.status}
         </span>
-                        </td>
-                        <td className="px-6 py-4">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <button className="p-1.5 hover:bg-neutral-100 rounded-md">
-                                        <MoreVertical className="w-4 h-4 text-neutral-600" />
-                                    </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="p-2 bg-gray-100 border-1 border-gray-200 text-xs w-auto space-y-3">
-                                    {(deploy.status !== "Pending") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
-                                                                         onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "Pending")}
-                                    ><span className="flex"><LoaderIcon size={11} className="text-xs text-gray-600" /></span> Set: Pending</p>}
-                                    {(deploy.status !== "Deployed") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
-                                                                          onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "Deployed")}
-                                    ><span className="flex"><Users2 size={11} className="text-xs text-gray-600" /><BookmarkCheck size={11} className="text-xs text-gray-600" /></span> Set: Deployed</p>}
-                                    {(deploy.deploy_status !== "completed") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
-                                                                                  onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "completed")}
-                                    ><UserCheck2 size={11} className="text-xs text-gray-600" /> Set: Completed</p>}
-                                    <p className="flex cursor-pointer flex-row items-center justify-start gap-2" onClick={()=>{
+                                  </td>
+                                  <td className="px-6 py-4">
+                                      <Popover>
+                                          <PopoverTrigger asChild>
+                                              <button className="p-1.5 hover:bg-neutral-100 rounded-md">
+                                                  <MoreVertical className="w-4 h-4 text-neutral-600" />
+                                              </button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="p-2 bg-gray-100 border-1 border-gray-200 text-xs w-auto space-y-3">
+                                              {(deploy.status !== "Pending") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
+                                                                                   onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "Pending")}
+                                              ><span className="flex"><LoaderIcon size={11} className="text-xs text-gray-600" /></span> Set: Pending</p>}
+                                              {(deploy.status !== "Deployed") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
+                                                                                    onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "Deployed")}
+                                              ><span className="flex"><Users2 size={11} className="text-xs text-gray-600" /><BookmarkCheck size={11} className="text-xs text-gray-600" /></span> Set: Deployed</p>}
+                                              {(deploy.deploy_status !== "completed") && <p className="flex cursor-pointer flex-row items-center justify-start gap-2"
+                                                                                            onClick={()=>api.updateDeploymentStatus(deploy.deployment_id, "completed")}
+                                              ><UserCheck2 size={11} className="text-xs text-gray-600" /> Set: Completed</p>}
+                                              <p className="flex cursor-pointer flex-row items-center justify-start gap-2" onClick={()=>{
 
-                                    }}><Users2 size={11} className="text-xs text-gray-600" /> View health workers</p>
-                                </PopoverContent>
-                            </Popover>
-                        </td>
-                    </tr>
-                );
-            })}
-            </tbody>
-          </table>
-        </div>
+                                              }}><Users2 size={11} className="text-xs text-gray-600" /> View health workers</p>
+                                          </PopoverContent>
+                                      </Popover>
+                                  </td>
+                              </tr>
+                          );
+                      })}
+                      </tbody>
+                  </table>
+              </div>
+          </div>
       </div>
     </div>
   );

@@ -643,7 +643,7 @@ export default function ExcelUploader() {
                     <h2 className="text-lg font-semibold mb-4">Assign Facilities, Competencies and trainings</h2>
 
                     <div className="overflow-y-auto">
-                        <div className="border rounded-md overflow-hidden overflow-x-auto">
+                        <div className="overflow-x-auto overflow-y-auto max-h-[600px] border border-neutral-200 rounded-md">
                             <div className={`overflow-x-scroll`} style={{maxWidth: size.width-20, width: contentWidth || undefined }}>
                                 <Table className="w-full">
                                     <TableCaption className="py-2 pb-4">Uploaded personnel (Step 2)</TableCaption>
