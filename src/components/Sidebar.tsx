@@ -76,16 +76,14 @@ export function Sidebar({ onLogout }: SidebarProps) {
             <Icon className="w-5 h-5" />
             <span className="hidden lg:inline">{item.label}</span>
           </span>
-                            </Button>
-                        );
-                    }
+                            </Button>);}
 
                     return (
                         <NavLink
                             key={item.to}
                             to={item.to}
                             end={item.to === "/dashboard"} // makes only /dashboard active, not /dashboard/anything
-                            className="w-full"
+                            className="lg:w-full"
                         >
                             {({ isActive }) => (
                                 <Button
