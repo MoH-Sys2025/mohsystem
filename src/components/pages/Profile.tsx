@@ -8,7 +8,7 @@ import {
     Briefcase,
     Calendar,
     LucideMailbox,
-    Edit3, BriefcaseMedical, LinkIcon, Unlink
+    Edit3, BriefcaseMedical, LinkIcon, Unlink, ArrowLeft
 } from "lucide-react";
 import DeploymentSummary from "@/components/DeploymentSummary.tsx";
 import {TrainingSection} from "@/components/Trainings.tsx";
@@ -18,7 +18,7 @@ import React from "react";
 import {Badge} from "@/components/ui/badge.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Competencies} from "../UserCharts.tsx";
-
+import { useNavigate } from "react-router-dom";
 interface HCWProfileProps {
     onNavigate?: () => void;
 }
@@ -30,6 +30,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
     const [linkedSystems, setLinks] = useState([])
     const [cadle, setCadle] = useState("")
     const { selectedMOHData } = useSelectedMOHData();
+    const navigate = useNavigate();
     const data = selectedMOHData;
     if (!data) return <p>No worker selected</p>;
 
@@ -50,7 +51,6 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
             // Load cadre data (must await, must use data.cadre_id)
             if (data.cadre_id) {
                 const cadreData = await api.listCadresEq(data.cadre_id);
-
                 if (cadreData && cadreData.length > 0) {
                     setCadle(cadreData[0].name);
                 }
@@ -70,11 +70,11 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
         <div className="md:col-span-6 lg:col-span-4 text-xs border shadow-sm border-neutral-200 rounded-lg p-4">
             <div className="font-semibold text-lg">Quick Links</div>
             <div className="flex flex-wrap flex-row gap-1 ">
-                <Button onClick={()=> onNavigate("documents")} size="xs" variant="secondary" className="p-2 py-0 font-normal bg-green-200 text-green-900">Documents</Button>
-                <Button onClick={()=> onNavigate("deployments")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Deploy</Button>
-                <Button onClick={()=> onNavigate("worker profile")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Edit Profile</Button>
-                <Button onClick={()=> onNavigate("documents")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Message</Button>
-                <Button onClick={()=> onNavigate("form trainings")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Assign to Trainings</Button>
+                <Button onClick={()=> navigate("/dashboard/documents")} size="xs" variant="secondary" className="p-2 py-0 font-normal bg-green-200 text-green-900">Documents</Button>
+                <Button onClick={()=> navigate("/dashboard/deployments")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Deploy</Button>
+                <Button onClick={()=> navigate("/dashboard/profile")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Edit Profile</Button>
+                <Button onClick={()=> navigate("/dashboard/documents") } size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Message</Button>
+                <Button onClick={()=> navigate("/dashboard/trainings")} size="xs" variant="outline" className="p-2 py-0 font-normal bg-green-200 text-green-900">Assign to Trainings</Button>
 
             </div>
         </div>,
@@ -95,10 +95,10 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
                         <CardTitle className=" font-semibold flex flex-row gap-2 items-center">Health Worker Profile<Edit3 className="ml-auto mt-1" size={14} /></CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col items-center text-center">
+                        <div className="flex flex-col items-center text-center justify-center">
                             <img
                                 src={imgSrc}
-                                alt="Profile"
+                                alt=""
                                 className="w-32 h-32 rounded-full shadow mb-4"
                             />
                             <h2 className="text-lg font-semibold flex-row flex items-center gap-2">{worker?.first_name} {worker?.last_name} </h2>
@@ -106,48 +106,31 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
                             <p className="text-sm mb-4">{worker?.role}</p>
                             <div className="space-y-3 text-sm w-full text-left">
                                 {/*<div className="flex items-center gap-2"><User size={16}/> {capitalize(worker?.gender)}, Age {age}</div>*/}
-                                <div className="flex items-center gap-2"><Phone size={16}/> {worker?.phone}</div>
-                                <div className="flex justify-start gap-4 flex-column">
-                                    {linkedSystems.map((linkData, index) => (
-                                        <div
-                                            key={`link-${index}`}
-                                            className="flex gap-1 text-gray-800 justify-center items-center text-xs h-5"
-                                        >
-                                            {linkData[1] ? (
-                                                <LinkIcon size={12} />
-                                            ) : (
-                                                <Unlink size={12} />
-                                            )}
-                                            {linkData[0]}
-                                        </div>
-                                    ))}
-                                </div>
+                                {worker?.phone && <div className="flex items-center gap-2"><Phone size={16}/> +265 {worker?.phone}</div>}
+
                                 <div className="flex items-center gap-2"><BriefcaseMedical size={16} />
                                     {worker?.metadata?.worker_status.map((status, index)=>(
                                         <Badge key={`status-${index}`} variant="outline" className="text-[9px] text-gray-800 font-semibold h-5 text-center"  >{status}</Badge>
                                     ))}
                                 </div>
-                                <div className="flex flex-row items-center gap-2"><Mail size={16}/>{worker?.email}</div>
-                                <div className="flex items-center gap-2"><MapPin size={16}/>{worker?.metadata?.district}, Malawi</div>
-                                <div className="flex items-center gap-2"><Briefcase size={16}/> Ministry of Health • EMT Certified</div>
-                                <div className="flex items-center gap-2"><Calendar size={16}/> Joined: {formatDate(worker?.created_at)}</div>
+                                {worker?.email && <div className="flex flex-row items-center gap-2"><Mail size={16}/>{worker?.email}</div>}
+                                {worker?.metadata?.district && <div className="flex items-center gap-2"><MapPin size={16}/>{worker?.metadata?.district}, Malawi</div>}
+                                <div className="flex items-center gap-2"><Briefcase size={16}/> Ministry of Health</div>
+                                {worker?.created_at && <div className="flex items-center gap-2"><Calendar size={16}/> Joined: {formatDate(worker?.created_at)}</div>}
                             </div>
 
                             {/*Qualifications*/}
-                            <div className="mt-6 w-full text-left">
-                                <h3 className="font-semibold mb-2">Qualifications</h3>
-
-                                <ul className="text-sm flex flex-col text-neutral-700">
-                                    {worker?.qualifications ? worker?.qualifications: "No qualifications are available"}
-                                </ul>
+                            <div className={`mt-6 w-full text-left text-sm`}>
+                                <h3 className={`font-semibold`}>Qualifications</h3>
+                                <div className={` text-sm mb-2 ${(worker?.qualifications == "Not set") ? 'text-gray-500 italic' : ''}`}>{(worker?.qualifications != "Not set") ? worker?.qualifications : "No qualifications are available"}</div>
                             </div>
 
                             {/*Competencies*/}
-                            <div className="mt-6 w-full text-left">
-                                <h3 className="font-semibold mb-2">Competencies</h3>
+                            <div className="mt-2 w-full text-left">
+                                <h3 className="font-semibold mb-2 text-sm">Competencies</h3>
                                 <ul className="list-none ml-0 text-sm flex flex-col justify-start text-neutral-700">
                                     {!worker?.metadata?.competencies || worker?.metadata?.competencies.length === 0 ? (
-                                        <div className="text-gray-400">No competencies are available</div>
+                                        <div className="text-gray-500 italic">No competencies are available</div>
                                     ) : (
                                         worker.metadata.competencies.map((comp, index) => (
                                             <li key={`comp-${index}`} className="py-0.5 w-full">

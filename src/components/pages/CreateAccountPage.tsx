@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp";
 import {api} from "@/supabase/Functions.tsx";
+import {useNavigate} from "react-router-dom";
 
 interface CreateAccountPageProps {
     onBackToLogin: () => void;
@@ -21,7 +22,7 @@ export function CreateAccountPage({ onBackToLogin }: CreateAccountPageProps) {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
-
+    const navigate = useNavigate();
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -223,7 +224,7 @@ export function CreateAccountPage({ onBackToLogin }: CreateAccountPageProps) {
                     <div className="mt-4 text-center">
                         <p className="text-sm text-neutral-500">
                             Already have an account?{" "}
-                            <button type="button" onClick={onBackToLogin} className="text-neutral-900 font-semibold hover:underline">
+                            <button type="button" onClick={()=>navigate("/login")} className="text-neutral-900 font-semibold hover:underline">
                                 Sign in
                             </button>
                         </p>

@@ -127,7 +127,7 @@ export default function DeploymentSummary({ imgSrc, worker }: DeployProps): JSX.
                             );
                         })
                     ) : (
-                        <div className="text-sm italic">
+                        <div className="text-sm italic text-gray-500">
                             The user has not been deployed yet.
                         </div>
                     )}

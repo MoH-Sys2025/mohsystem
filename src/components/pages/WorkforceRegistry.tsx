@@ -38,7 +38,7 @@ import {
     Link as LinkIcon,
     Unlink,
     Trash2, User2, FileSpreadsheet, FileText, File, ChevronDown, Users, UserCheck, LoaderIcon, BriefcaseMedical,
-    UsersRoundIcon, Truck, CheckCircle, Clock, Briefcase, XCircle, Circle
+    UsersRoundIcon, Truck, CheckCircle, Clock, Briefcase, XCircle, Circle, ArrowLeft
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {
@@ -55,7 +55,7 @@ import {Popover} from "@/components/ui/popover.tsx";
 import {PopoverContent, PopoverPortal, PopoverTrigger} from "@radix-ui/react-popover";
 import {useSession} from "@/contexts/AuthProvider.tsx";
 import {toast} from "sonner";
-
+import { useNavigate } from "react-router-dom";
 interface WorkforceRegProps {
     onNavigate: (page: string) => void;
 }
@@ -72,6 +72,7 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const { ref, size } = useElementSize<HTMLDivElement>();
     const contentWidth = size.width - size.paddingLeft - size.paddingRight;
 
+    const navigate = useNavigate();
     const [workers, setPersonnel] = useState<any[]>([]);
     const [cadres, setCadres] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -402,9 +403,8 @@ return (
                     Manage and monitor healthcare workers across Malawi
                 </p>
             </div>
-            <Button className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg" variant="secondary" size="lg" onClick={()=>onNavigate('add worker')}>+ Add Health Worker</Button>
+            <Button className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg" variant="secondary" size="lg" onClick={()=>navigate("/dashboard/workregistry/addworker")}>+ Add Health Worker</Button>
         </div>
-
         <>
             <div className="grid grid-cols-6 md:grid-cols-6 gap-1 md:hidden">
                 {[
@@ -622,7 +622,7 @@ return (
                     <div className={`overflow-x-scroll truncate`} style={{maxWidth: size.width-20, width: contentWidth-20 || undefined }}>
 
                         <Table className="w-full min-w-[800px]">
-                            <TableHeader>
+                            <TableHeader className="sticky top-0">
                                 <TableRow className="z-3">
                                     {[
                                         "Worker ID",
@@ -638,7 +638,7 @@ return (
                                     ].map((h) => (
                                         <TableHead
                                             key={h}
-                                            className={`sticky top-0 text-xs uppercase tracking-wider px-3 py-2 text-left
+                                            className={` text-xs uppercase tracking-wider px-3 py-2 text-left
                                                 ${[""].includes(h) ? "hidden md:table-cell" : ""}
                                                 ${h === "Actions" ? "sticky right-0 z-2 bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]" : ""}
                                               `}
@@ -756,7 +756,7 @@ return (
                                                         className="flex justify-start cursor-pointer items-center gap-2 font-normal"
                                                         onClick={() => {
                                                             setSelectedMOHData(worker);
-                                                            onNavigate("worker profile");
+                                                            navigate("/dashboard/workregistry/profile")
                                                         }}
                                                     >
                                                         <User2 size={11} className="text-xs text-gray-600" /> View

@@ -16,12 +16,10 @@ import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {toast} from "sonner";
+import {useElementSize} from "../../supabase/Functions.tsx";
+import {useNavigate} from "react-router-dom";
 
-interface DeployProps {
-    onNavigate: (page: string) => void;
-}
-
-export function Deployments({onNavigate}: DeployProps): JSX.Element {
+export function Deployments(): JSX.Element {
     const [activeD, setActiveD] = useState<number>(0);
     const [deployedList, setDeployedList] = useState<any[]>([]);
     const [uniqueDeployed, setUniqueDeployedList] = useState<any[]>([]);
@@ -30,6 +28,7 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
     const [activeOutb, setActiveOutbreaks] = useState<number>(0);
     const [activeCounts, setActiveCounts] = useState<number[]>([]);
     const [outbreakInfo, setOutbreakInfo] = useState<any[]>([]);
+    const navigate = useNavigate();
 
     const { ref, size } = useElementSize<HTMLDivElement>();
     const contentWidth = size.width - size.paddingLeft - size.paddingRight;
@@ -103,7 +102,7 @@ export function Deployments({onNavigate}: DeployProps): JSX.Element {
           <h1 className="text-neutral-900 mb-2">Deployments</h1>
           <p className="text-neutral-500">Manage healthcare worker deployments and outbreak responses</p>
         </div>
-        <Button onClick={()=>onNavigate("deploy form")} className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg flex items-center gap-2 text-black hover:bg-gray-200">
+        <Button onClick={()=>navigate("dashboard/deployments/newdeployments")} className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg flex items-center gap-2 text-black hover:bg-gray-200">
           <Send className="w-5 h-5" />
           New Deployment
         </Button>
