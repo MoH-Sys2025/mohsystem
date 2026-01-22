@@ -37,6 +37,7 @@ import {
     TableHeader,
     TableRow,} from "@/components/ui/table";
 import {useSession} from "@/contexts/AuthProvider.tsx";
+import {useNavigate} from "react-router-dom";
 
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
@@ -48,6 +49,7 @@ export default function ExcelUploader() {
     const { ref, size } = useElementSize<HTMLDivElement>();
     const contentWidth = size.width - size.paddingLeft - size.paddingRight;
 
+    const navigate = useNavigate();
     const [districts, setDistricts] = useState([]);
     const [facilities, setFacilities] = useState([]);
     const [cadres, setCadres] = useState([]);
@@ -453,7 +455,8 @@ export default function ExcelUploader() {
             {step === 1 && (
                 <div>
                     <div className={`transition-all duration-500 ${uploaded ? "flex justify-start" : "flex justify-center items-center h-[60vh]"}`}>
-                        <div className="p-2 flex flex-row gap-2 items-center justify-center">
+                        {!uploaded && <div className="p-2 flex flex-row gap-2 items-center justify-center">
+                            <Button size="sm" className="p-1 bg-neutral-700 rounded-full " onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
                             {/* Upload Button */}
                             <Button
                                 asChild
@@ -478,11 +481,22 @@ export default function ExcelUploader() {
                                 onChange={handleFileUpload}
                                 className="hidden"
                             />
-                        </div>
+                        </div>}
                     </div>
 
                     {uploaded && (
                         <div>
+                            <div className="flex flex-row items-center justify-between">
+                                <Button size="sm" className="p-1 bg-neutral-700 rounded-md " onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
+                                <Button
+                                    onClick={() => setStep(2)}
+                                    className="flex ml-auto items-center gap-2"
+                                    size="sm"
+                                >
+                                    Proceed
+                                    <ArrowRight />
+                                </Button>
+                            </div>
                             <div className="mt-6 border rounded-md">
                                 {/* Search Input */}
                                 <div className="flex items-center rounded-md px-2 gap-1 rounded-b-none bg-gray-200 pl-3 p-1">
@@ -639,29 +653,28 @@ export default function ExcelUploader() {
             )}
 
             {step === 2 && (
-                <div className="mt-4">
+                <div ref={ref} className="mt-4 overflow-hidden">
                     <h2 className="text-lg font-semibold mb-4">Assign Facilities, Competencies and trainings</h2>
 
-                    <div className="overflow-y-auto">
-                        <div className="overflow-x-auto overflow-y-auto max-h-[600px] border border-neutral-200 rounded-md">
-                            <div className={`overflow-x-scroll`} style={{maxWidth: size.width-20, width: contentWidth || undefined }}>
-                                <Table className="w-full">
-                                    <TableCaption className="py-2 pb-4">Uploaded personnel (Step 2)</TableCaption>
-                                    <TableHeader className="sticky top-0">
-                                       <TableRow className="bg-gray-100 top-0 z-10">
-                                           <TableHead className="border p-2 w-50">Full Name</TableHead>
-                                           <TableHead className="border p-2 w-80">Position</TableHead>
-                                           <TableHead className="border p-2">Trainings</TableHead>
+                    <div className="overflow-x-auto overflow-y-auto max-h-[600px] border border-neutral-200 rounded-md">
+                        <div className={`overflow-x-scroll`} style={{maxWidth: size.width-20, width: contentWidth || undefined }}>
+                            <Table className="w-full">
+                                <TableCaption className="py-2 pb-4">Uploaded personnel (Step 2)</TableCaption>
+                                <TableHeader className="">
+                                    <TableRow className="bg-gray-100 top-0 z-10">
+                                        <TableHead className="border p-2 w-50">Full Name</TableHead>
+                                        <TableHead className="border p-2 w-80">Position</TableHead>
+                                        <TableHead className="border p-2">Trainings</TableHead>
 
-                                           <TableHead className="border p-2">
-                                               Facility <FacilitySelector index={null} />
-                                           </TableHead>
-                                           <TableHead className="border p-2">Competencies</TableHead>
-                                       </TableRow>
-                                   </TableHeader>
+                                        <TableHead className="border p-2">
+                                            Facility <FacilitySelector index={null} />
+                                        </TableHead>
+                                        <TableHead className="border p-2">Competencies</TableHead>
+                                    </TableRow>
+                                </TableHeader>
 
-                                    <TableBody>
-                                        {rows.map((person, index) => {
+                                <TableBody>
+                                    {rows.map((person, index) => {
                                         const values = Object.values(person);
                                         const firstName = values[0] || "";
                                         const lastName = values[1] || "";
@@ -768,15 +781,14 @@ export default function ExcelUploader() {
                                             </TableRow>
                                         );
                                     })}
-                                    </TableBody>
-                                    <TableFooter className="bg-gray-200">
-                                        <TableRow>
-                                            <TableCell colSpan={3}>Total</TableCell>
-                                            <TableCell className="text-left pl-4">{rows.length}</TableCell>
-                                        </TableRow>
-                                    </TableFooter>
-                                </Table>
-                            </div>
+                                </TableBody>
+                                <TableFooter className="bg-gray-200">
+                                    <TableRow>
+                                        <TableCell colSpan={3}>Total</TableCell>
+                                        <TableCell className="text-left pl-4">{rows.length}</TableCell>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
                         </div>
                     </div>
 

@@ -622,7 +622,7 @@ return (
                     <div className={`overflow-x-scroll truncate`} style={{maxWidth: size.width-20, width: contentWidth-20 || undefined }}>
 
                         <Table className="w-full min-w-[800px]">
-                            <TableHeader className="sticky top-0">
+                            <TableHeader>
                                 <TableRow className="z-3">
                                     {[
                                         "Worker ID",
@@ -638,7 +638,7 @@ return (
                                     ].map((h) => (
                                         <TableHead
                                             key={h}
-                                            className={` text-xs uppercase tracking-wider px-3 py-2 text-left
+                                            className={`sticky top-0 text-xs uppercase tracking-wider px-3 py-2 text-left
                                                 ${[""].includes(h) ? "hidden md:table-cell" : ""}
                                                 ${h === "Actions" ? "sticky right-0 z-2 bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]" : ""}
                                               `}

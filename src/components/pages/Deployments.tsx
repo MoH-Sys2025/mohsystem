@@ -95,9 +95,9 @@ export function Deployments(): JSX.Element {
 
 
   return (
-    <div ref={ref} className="space-y-8 p-6">
+    <div ref={ref} className="space-y-8 p-2">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex md:flex-row flex-col md:items-center md:justify-between justify-start">
         <div>
           <h1 className="text-neutral-900 mb-2">Deployments</h1>
           <p className="text-neutral-500">Manage healthcare worker deployments and outbreak responses</p>
@@ -109,9 +109,9 @@ export function Deployments(): JSX.Element {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           {topTabData.map((d, i) => (
-              <div className="bg-white rounded-xl border border-neutral-200 p-1 px-4 flex flex-row items-center gap-5 ">
+              <div className="bg-white rounded-xl border border-neutral-200 p-2 px-4 flex flex-row items-center justify-between gap-1 ">
                   <p className="text-sm text-neutral-500">{d.item}</p>
                   <p className="text-2xl font-semibold text-neutral-900">{d.value}</p>
               </div>

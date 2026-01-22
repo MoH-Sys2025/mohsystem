@@ -88,65 +88,70 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
     const imgSrc = (capitalize(worker?.gender) === 'Female') ? "/portrait_Nurse.jpg":"/male_nurse.png"
     return (
         <div className="w-full min-h-screen bg-white">
-            <div className="max-w-full w-full grid grid-cols-1 md:grid-cols-12 gap-0 ">
+            <Button size="sm" className="p-1 bg-neutral-700 rounded-full m-2" onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
+            <div className="max-w-full w-full grid grid-cols-1 md:grid-cols-12 gap-0">
                 {/* Profile Card */}
-                <Card className=" md:col-span-4 col-span-1 overflow-y-hidden m-1 rounded-lg">
-                    <CardHeader>
-                        <CardTitle className=" font-semibold flex flex-row gap-2 items-center">Health Worker Profile<Edit3 className="ml-auto mt-1" size={14} /></CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center text-center justify-center">
-                            <img
-                                src={imgSrc}
-                                alt=""
-                                className="w-32 h-32 rounded-full shadow mb-4"
-                            />
-                            <h2 className="text-lg font-semibold flex-row flex items-center gap-2">{worker?.first_name} {worker?.last_name} </h2>
-                            <p className="text-neutral-500">{cadle}</p>
-                            <p className="text-sm mb-4">{worker?.role}</p>
-                            <div className="space-y-3 text-sm w-full text-left">
-                                {/*<div className="flex items-center gap-2"><User size={16}/> {capitalize(worker?.gender)}, Age {age}</div>*/}
-                                {worker?.phone && <div className="flex items-center gap-2"><Phone size={16}/> +265 {worker?.phone}</div>}
+                <Card className=" md:col-span-4 col-span-1 m-1 py-2 rounded-lg px-0.5">
+                    <div className="md:overflow-y-auto h-full py-3">
+                        <div className="md:max-h-100 md:h-100">
+                            <CardHeader>
+                                <CardTitle className=" font-semibold flex flex-row gap-2 items-center">Health Worker Profile<Edit3 className="ml-auto mt-1" size={14} /></CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-col items-center text-center justify-center">
+                                    <img
+                                        src={imgSrc}
+                                        alt=""
+                                        className="w-32 h-32 rounded-full shadow mb-4"
+                                    />
+                                    <h2 className="text-lg font-semibold flex-row flex items-center gap-2">{worker?.first_name} {worker?.last_name} </h2>
+                                    <p className="text-neutral-500">{cadle}</p>
+                                    <p className="text-sm mb-4">{worker?.role}</p>
+                                    <div className="space-y-3 text-sm w-full text-left">
+                                        {/*<div className="flex items-center gap-2"><User size={16}/> {capitalize(worker?.gender)}, Age {age}</div>*/}
+                                        {worker?.phone && <div className="flex items-center gap-2"><Phone size={16}/> +265 {worker?.phone}</div>}
 
-                                <div className="flex items-center gap-2"><BriefcaseMedical size={16} />
-                                    {worker?.metadata?.worker_status.map((status, index)=>(
-                                        <Badge key={`status-${index}`} variant="outline" className="text-[11px] text-gray-800 font-semibold h-5 text-center"  >{status}</Badge>
-                                    ))}
+                                        <div className="flex items-center gap-2"><BriefcaseMedical size={16} />
+                                            {worker?.metadata?.worker_status.map((status, index)=>(
+                                                <Badge key={`status-${index}`} variant="outline" className="text-[11px] text-gray-800 font-semibold h-5 text-center"  >{status}</Badge>
+                                            ))}
+                                        </div>
+                                        {worker?.email && <div className="flex flex-row items-center gap-2"><Mail size={16}/>{worker?.email}</div>}
+                                        {worker?.metadata?.district && <div className="flex items-center gap-2"><MapPin size={16}/>{worker?.metadata?.district}, Malawi</div>}
+                                        <div className="flex items-center gap-2"><Briefcase size={16}/> Ministry of Health</div>
+                                        {worker?.created_at && <div className="flex items-center gap-2"><Calendar size={16}/> Joined: {formatDate(worker?.created_at)}</div>}
+                                    </div>
+
+                                    {/*Qualifications*/}
+                                    <div className={`mt-6 w-full text-left text-sm`}>
+                                        <h3 className={`font-semibold`}>Qualifications</h3>
+                                        <div className={` text-sm mb-2 ${(worker?.qualifications == "Not set") ? 'text-gray-500 italic' : ''}`}>{(worker?.qualifications != "Not set") ? worker?.qualifications : "No qualifications are available"}</div>
+                                    </div>
+
+                                    {/*Competencies*/}
+                                    <div className="mt-2 w-full text-left">
+                                        <h3 className="font-semibold mb-2 text-sm">Competencies</h3>
+                                        <ul className="list-none ml-0 text-sm flex flex-col justify-start text-neutral-700">
+                                            {!worker?.metadata?.competencies || worker?.metadata?.competencies.length === 0 ? (
+                                                <div className="text-gray-500 italic">No competencies are available</div>
+                                            ) : (
+                                                worker.metadata.competencies.map((comp, index) => (
+                                                    <li key={`comp-${index}`} className="py-0.5 w-full">
+                                                        <Button variant="outline" className="px-3 py-1 rounded-full">
+                                                            {comp}
+                                                        </Button>
+                                                    </li>
+                                                ))
+                                            )}
+
+                                        </ul>
+
+                                    </div>
+
                                 </div>
-                                {worker?.email && <div className="flex flex-row items-center gap-2"><Mail size={16}/>{worker?.email}</div>}
-                                {worker?.metadata?.district && <div className="flex items-center gap-2"><MapPin size={16}/>{worker?.metadata?.district}, Malawi</div>}
-                                <div className="flex items-center gap-2"><Briefcase size={16}/> Ministry of Health</div>
-                                {worker?.created_at && <div className="flex items-center gap-2"><Calendar size={16}/> Joined: {formatDate(worker?.created_at)}</div>}
-                            </div>
-
-                            {/*Qualifications*/}
-                            <div className={`mt-6 w-full text-left text-sm`}>
-                                <h3 className={`font-semibold`}>Qualifications</h3>
-                                <div className={` text-sm mb-2 ${(worker?.qualifications == "Not set") ? 'text-gray-500 italic' : ''}`}>{(worker?.qualifications != "Not set") ? worker?.qualifications : "No qualifications are available"}</div>
-                            </div>
-
-                            {/*Competencies*/}
-                            <div className="mt-2 w-full text-left">
-                                <h3 className="font-semibold mb-2 text-sm">Competencies</h3>
-                                <ul className="list-none ml-0 text-sm flex flex-col justify-start text-neutral-700">
-                                    {!worker?.metadata?.competencies || worker?.metadata?.competencies.length === 0 ? (
-                                        <div className="text-gray-500 italic">No competencies are available</div>
-                                    ) : (
-                                        worker.metadata.competencies.map((comp, index) => (
-                                            <li key={`comp-${index}`} className="py-0.5 w-full">
-                                                <Button variant="outline" className="px-3 py-1 rounded-full">
-                                                    {comp}
-                                                </Button>
-                                            </li>
-                                        ))
-                                    )}
-
-                                </ul>
-
-                            </div>
-
+                            </CardContent>
                         </div>
-                    </CardContent>
+                    </div>
                 </Card>
 
                 {/* Performance and Deployment */}
