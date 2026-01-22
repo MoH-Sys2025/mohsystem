@@ -85,7 +85,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
             <Competencies competencies={worker?.metadata?.competencies} />
         </div>
     ]
-    const imgSrc = (capitalize(worker?.gender) === 'Female') ? "portrait_Nurse.jpg":"male_nurse.png"
+    const imgSrc = (capitalize(worker?.gender) === 'Female') ? "/portrait_Nurse.jpg":"/male_nurse.png"
     return (
         <div className="w-full min-h-screen bg-white">
             <div className="max-w-full w-full grid grid-cols-1 md:grid-cols-12 gap-0 ">
@@ -110,7 +110,7 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
 
                                 <div className="flex items-center gap-2"><BriefcaseMedical size={16} />
                                     {worker?.metadata?.worker_status.map((status, index)=>(
-                                        <Badge key={`status-${index}`} variant="outline" className="text-[9px] text-gray-800 font-semibold h-5 text-center"  >{status}</Badge>
+                                        <Badge key={`status-${index}`} variant="outline" className="text-[11px] text-gray-800 font-semibold h-5 text-center"  >{status}</Badge>
                                     ))}
                                 </div>
                                 {worker?.email && <div className="flex flex-row items-center gap-2"><Mail size={16}/>{worker?.email}</div>}
