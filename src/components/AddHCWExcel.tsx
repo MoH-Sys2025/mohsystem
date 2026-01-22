@@ -455,7 +455,7 @@ export default function ExcelUploader() {
             {step === 1 && (
                 <div>
                     <div className={`transition-all duration-500 ${uploaded ? "flex justify-start" : "flex justify-center items-center h-[60vh]"}`}>
-                        {!uploaded && <div className="p-2 flex flex-row gap-2 items-center justify-center">
+                        {!uploaded && <div className="p-2 flex flex-col md:flex-row gap-2 items-center justify-center">
                             <Button size="sm" className="p-1 bg-neutral-700 rounded-full " onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
                             {/* Upload Button */}
                             <Button
@@ -467,7 +467,7 @@ export default function ExcelUploader() {
                             </Button>
 
                             {/* Download Template */}
-                            <Button asChild variant="secondary" size="sm">
+                            <Button asChild variant="secondary" className="border-2 py-1 border-dashed" size="sm">
                                 <a href="/personnel_template.xlsx" download className="flex items-center gap-2">
                                     <Download className="w-4 h-4" />
                                     Download Template
