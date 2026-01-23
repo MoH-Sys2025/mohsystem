@@ -102,9 +102,9 @@ export function Deployments(): JSX.Element {
           <h1 className="text-neutral-900 mb-2">Deployments</h1>
           <p className="text-neutral-500">Manage healthcare worker deployments and outbreak responses</p>
         </div>
-        <Button onClick={()=>navigate("dashboard/deployments/newdeployments")} className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg flex items-center gap-2 text-black hover:bg-gray-200">
+        <Button onClick={()=>navigate("/dashboard/deployments/newdeployments")} className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg flex items-center gap-2 text-black hover:bg-gray-200">
           <Send className="w-5 h-5" />
-          New Deployment
+          New Deployments
         </Button>
       </div>
 

@@ -37,11 +37,6 @@ export const api = {
             .single();
 
         if (otpError || !otpRow) {
-            toast.error(
-                otpError?.code === "PGRST116"
-                    ? "Session expired. Please request a new OTP from administrator_00."
-                    : "The OTP code entered is invalid."
-            );
             return { error: otpError ?? new Error("Invalid OTP") };
         }
 
@@ -53,7 +48,6 @@ export const api = {
             });
 
         if (signUpError) {
-            toast.error(signUpError.message || "Sign up failed.");
             return { error: signUpError };
         }
 
@@ -71,7 +65,6 @@ export const api = {
             ]);
 
         if (profileError) {
-            toast.error("Failed to save user profile.");
             return { error: profileError };
         }
 
@@ -123,7 +116,6 @@ export const api = {
         );
 
         if (error) {
-            toast.error(error.message || "Failed to send notification");
             throw error;
         }
         return data;
@@ -134,7 +126,6 @@ export const api = {
             .insert(payload)
             .select("*")
             .single();
-        if (error) toast.error("The system failed to create the User")
         return data;
     },
 
@@ -146,7 +137,6 @@ export const api = {
             .select("*")
             .single();
 
-        if (error) toast.error("There was an error while updating Health workers data");
         return data;
     },
     async getUniqueDeployments() {
@@ -156,7 +146,6 @@ export const api = {
             .order("deployment_id");
 
         if (error) {
-            toast.error("Error fetching deployments data");
             return [];
         }
 
@@ -206,7 +195,6 @@ export const api = {
                 .eq("deployment_id", deploymentId);
 
             if (error) {
-                toast.error("Failed to perform this action");
                 return
             }
             // ------------------------------------------------------------------
@@ -220,15 +208,10 @@ export const api = {
                         p_status: (status === "completed") ? "Available":status, // "Deployed" | "Pending" | "Available"
                     }
                 );
-
-                if (error) toast.error("Failed to update Deployments table")
-
-
             }
 
             return { success: true };
         } catch (error) {
-            toast.error("Update error");
             return { success: false, error };
         }
     },
@@ -240,7 +223,6 @@ export const api = {
             .eq("deploy_status", "active");
 
         if (deploymentsError) {
-            toast.error("Error fetching deployments data");
             return [];
         }
 
@@ -268,7 +250,6 @@ export const api = {
             .in("id", outbreakIds);
 
         if (outbreaksError) {
-            toast.error("Error fetching outbreaks");
             return [];
         }
 
@@ -283,7 +264,6 @@ export const api = {
             .order("deployment_id");
 
         if (error) {
-            toast.error("Error fetching deployments data")
             return [];
         }
 
@@ -304,8 +284,6 @@ export const api = {
             .select("deployment_id", { count: "exact" })
             .eq("deploy_status", "active");
 
-        if (error) toast.error("There was an error while getting active deployments");
-
         const unique = [...new Set(data.map((d) => d.deployment_id))].length;
 
         return unique;
@@ -318,7 +296,6 @@ export const api = {
             .eq('deploy_status', 'active');
 
         if (error) {
-            toast.error('Error fetching active deployments:');
             return {};
         }
 
@@ -337,8 +314,6 @@ export const api = {
             .select("assigned_district_id", { count: "exact" })
             .eq("deploy_status", "active");
 
-        if (error) toast.error("There was an error while getting active deployed districts");
-
         const unique = [...new Set(data.map((d) => d.assigned_district_id))].length;
 
         return unique;
@@ -349,7 +324,6 @@ export const api = {
             .select("outbreak_id", { count: "exact" })
             .eq("deploy_status", "active");
 
-        if (error) toast.error("There was an error while getting active outbreaks");
         const unique = [...new Set(data.map((d) => d.outbreak_id))].length;
 
         return unique;
@@ -362,7 +336,6 @@ export const api = {
             .eq("system_status", "registered") // <-- filter only registered
             .single();
 
-        if (error) toast.error("There was an error while getting Health workers data");
         return data;
     },
 
@@ -372,7 +345,6 @@ export const api = {
             .select("*")
             .order("id", { ascending: true })
             .limit(limit);
-        if (error) toast.error("There was an error while getting notifications");
         return data;
     },
 
@@ -382,7 +354,6 @@ export const api = {
             .delete()
             .eq("id", id);
 
-        if (error) toast.error("Error deleting notification");
         return true;
     },
 
@@ -393,7 +364,6 @@ export const api = {
             .eq("id", id);
 
         if (error) {
-            toast.error("Error deleting Healthcare worker");
             return false;
         }
 
@@ -453,7 +423,6 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) toast.error("Error fetching districts");
         return data;
     },
 
@@ -464,7 +433,6 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) toast.error("Error fetching cadres");
         return data;
     },
     async listFacilities(limit = 10000) {
@@ -474,7 +442,6 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) toast.error("Error fetching Health facilities");
         return data;
     },
 
@@ -484,7 +451,6 @@ export const api = {
             .select("*")
             .order("id", { ascending: true })
             .limit(limit);
-        if (error) toast.error("Error fetching deployments");
         return data;
     },
     async listDeploymentsEq(equal_data: string, limit = 10000) {
@@ -495,7 +461,6 @@ export const api = {
             .order("created_at", { ascending: true })
             .limit(limit);
         if (error) {
-            toast.error("Error fetching deployments");
             return []
         }
         return data;
@@ -507,7 +472,6 @@ export const api = {
             .order("id", { ascending: true })
             .limit(limit);
 
-        if (error) toast.error("Error fetching outbreaks data");
         return data;
     },
 
@@ -523,7 +487,6 @@ export const api = {
 
         const { data, error } = await query;
 
-        if (error) toast.error("Error fetching cadres");
         return data;
     },
     async getCadresIdByName(cadreName?: string) {
@@ -538,7 +501,6 @@ export const api = {
 
         const { data, error } = await query;
 
-        if (error) toast.error("Error fetching cadres");
         return data;
     },
     async getWorkforceStats() {
@@ -1142,4 +1104,54 @@ export async function getAuthHeaders() {
             import.meta.env.VITE_SUPABASE_ANON_KEY
         }`,
     };
+}
+
+function parseDateToUTC(dateStr, isEnd = false) {
+    const [day, month, year] = dateStr.split("-").map(Number);
+
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    if (isEnd) {
+        date.setUTCHours(23, 59, 59, 999);
+    } else {
+        date.setUTCHours(0, 0, 0, 0);
+    }
+
+    return date;
+}
+
+export async function getNotificationsForWeek(
+    numberOfDays,
+    endDateStr // "dd-mm-yyyy"
+) {
+    // Parse end date
+    const endDate = parseDateToUTC(endDateStr, true);
+
+    // Calculate start date
+    const startDate = new Date(endDate);
+    startDate.setUTCDate(startDate.getUTCDate() - numberOfDays);
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .gte("created_at", startDate.toISOString())
+        .lte("created_at", endDate.toISOString());
+
+    if (error) {
+        throw error;
+    }
+
+    console.log(data)
+    return data;
+}
+
+export function getTodayDDMMYYYY() {
+    const now = new Date();
+
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = now.getFullYear();
+
+    return `${day}-${month}-${year}`;
 }

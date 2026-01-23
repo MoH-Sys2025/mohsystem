@@ -894,7 +894,7 @@ return (
                                 {
                                     title: "Healthcare Workers Removed",
                                     message: "Healthcare workers have been deleted.",
-                                    type: "success",
+                                    type: "WorkerDeletion",
                                     metadata: {
                                         user: session.user
                                     }

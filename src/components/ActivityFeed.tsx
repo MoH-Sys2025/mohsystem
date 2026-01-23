@@ -1,53 +1,56 @@
-import { UserPlus, Send, FileCheck, Award } from 'lucide-react';
+import {UserPlus, Send, FileCheck, Award, Trash2} from 'lucide-react';
+import {useEffect, useState} from "react";
+import {Badge} from "./ui/badge.tsx"
+import {getNotificationsForWeek, getTodayDDMMYYYY, getTimeFromISO} from "../supabase/Functions.tsx";
+import {ScrollArea, ScrollBar} from "./ui/scroll-area.tsx";
+
 
 interface ActivityProps {
     className?: string;
 }
 
 export function ActivityFeed({className}: ActivityProps) {
-  const activities = [
-    {
-      type: 'deployment',
-      icon: Send,
-      title: 'New Deployment',
-      description: '12 healthcare workers deployed to Dedza District',
-      time: '15 minutes ago',
-      color: 'emerald',
-    },
-    {
-      type: 'registration',
-      icon: UserPlus,
-      title: 'Worker Registered',
-      description: 'Dr. Grace Banda added to workforce registry',
-      time: '1 hour ago',
-      color: 'blue',
-    },
-    {
-      type: 'certification',
-      icon: Award,
-      title: 'Training Completed',
-      description: '28 workers certified in Emergency Response Protocol',
-      time: '3 hours ago',
-      color: 'amber',
-    },
-    {
-      type: 'document',
-      icon: FileCheck,
-      title: 'Document Verified',
-      description: 'Medical licenses verified for 15 healthcare workers',
-      time: '5 hours ago',
-      color: 'neutral',
-    },
-    {
-      type: 'deployment',
-      icon: Send,
-      title: 'Deployment Complete',
-      description: 'Outbreak response team returned from Mangochi',
-      time: '1 day ago',
-      color: 'emerald',
-    },
-  ];
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
 
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [activities, setActivities] = useState<number[]>([]);
+    const [days, setDays] = useState(7);
+  // const activities = [
+  //   {
+  //     type: 'certification',
+  //     icon: Award,
+  //     title: 'Training Completed',
+  //     description: '28 workers certified in Emergency Response Protocol',
+  //     time: '3 hours ago',
+  //     color: 'amber',
+  //   },
+  //   {
+  //     type: 'document',
+  //     icon: FileCheck,
+  //     title: 'Document Verified',
+  //     description: 'Medical licenses verified for 15 healthcare workers',
+  //     time: '5 hours ago',
+  //     color: 'neutral',
+  //   },
+  // ];
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const data = await getNotificationsForWeek(days, getTodayDDMMYYYY())
+                setNotifications(data || []);
+                setActivities(data || []);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        load();
+    }, []);
   const getColorClasses = (color: string) => {
     switch (color) {
       case 'emerald':
@@ -69,21 +72,36 @@ export function ActivityFeed({className}: ActivityProps) {
       </div>
 
       <div className="space-y-4">
-        {activities.map((activity, index) => {
-          const Icon = activity.icon;
-          return (
-            <div key={index} className="flex gap-4">
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border ${getColorClasses(activity.color)}`}>
-                <Icon className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-neutral-900 mb-1">{activity.title}</p>
-                <p className="text-sm text-neutral-600 mb-1">{activity.description}</p>
-                <span className="text-xs text-neutral-500">{activity.time}</span>
-              </div>
+        <ScrollArea className="h-65 max-h-68 rounded-lg scroll-smooth">
+            <div className="space-y-3">
+                {activities.length > 0 ? activities.map((activity, index) => {
+                    let Icon =  Send;
+                    if(activity?.type == "Deployment")
+                        Icon = Send;
+                    else if(activity?.type == "Registration")
+                        Icon = UserPlus;
+                    else if(activity?.type == "WorkerDeletion")
+                        Icon = Trash2;
+                    else if(activity?.title == "Healthcare Workers Registration")
+                        Icon = UserPlus;
+
+                    return (
+                        <div key={index} className="flex gap-4">
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border amber`}>
+                                <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-neutral-900 mb-1">{activity.title}</p>
+                                <p className="text-sm text-neutral-600">{activity.message}</p>
+                                <span className="text-xs text-neutral-500">{activity?.created_at.split("T")[0]} {getTimeFromISO(activity?.created_at)}</span>
+                            </div>
+                        </div>
+                    );
+                }) : <p className="text-sm text-neutral-500">
+                    No recent activities are available. Create, deploy and assign trainings to healthcare workers</p>
+                }
             </div>
-          );
-        })}
+        </ScrollArea>
       </div>
     </div>
   );

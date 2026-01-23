@@ -38,6 +38,7 @@ import {
     TableRow,} from "@/components/ui/table";
 import {useSession} from "@/contexts/AuthProvider.tsx";
 import {useNavigate} from "react-router-dom";
+import {showAlert} from "./NotificationsAlerts.tsx";
 
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
@@ -216,18 +217,23 @@ export default function ExcelUploader() {
                 return;
             }
 
-            toast.success("✅ Personnel successfully uploaded!");
             await api.sendNotification(
                 session.user.id,
                 {
-                    title: "Healthcare Workers Registration",
-                    message: rows.length + " have successfully been registered",
+                    title: "Workers Registered",
+                    message: rows.length + ` Healthcare ${(rows.length == 1) ? " worker has" : "workers have"} successfully been registered`,
                     type: "Registration",
                     metadata: {
                         email: session.user.email
                     }
                 }
             )
+            showAlert({
+                title: "Workers Registered Successfully",
+                description: rows.length + ` Healthcare ${(rows.length == 1) ? " worker has" : "workers have"} successfully been registered`,
+                type: "success",
+                duration: 7000,
+            })
         } catch (err) {
             toast.error("⚠️ Unexpected error occurred.");
         }

@@ -119,7 +119,7 @@ export function DashboardHome({onNavigate}: DashboardProps) {
                   {/* Workforce Analytics */}
                   <WorkforceChart />
               </div>
-              <div className="col-span-2 md:overflow-y-scroll md:max-h-90" >
+              <div className="col-span-2" >
                   <ActivityFeed className={isMapMaximized ? 'hidden' : 'block'} />
                   {/*<AlertsPanel />*/}
               </div>

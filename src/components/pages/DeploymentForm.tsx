@@ -31,7 +31,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {showAlert} from "@/components/NotificationsAlerts.tsx";
 import {useSession} from "@/contexts/AuthProvider.tsx";
-import {ChevronDown, Loader, Loader2} from "lucide-react";
+import {ArrowLeft, ChevronDown, Loader, Loader2, MapPin, Search} from "lucide-react";
+import {useNavigate} from "react-router-dom";
+import {ScrollArea} from "../ui/scroll-area.tsx";
+import {InputGroup, InputGroupAddon, InputGroupInput, InputGroupText} from "../ui/input-group.tsx";
 
 /**
  * Deployment form:
@@ -128,20 +131,16 @@ const DeploymentContext = createContext<DeploymentContextType>({
 export default function NewDeploymentForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
+    const navigate = useNavigate();
 
     const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
     return (
-        <DeploymentContext.Provider
-            value={{ selectedIds, setSelectedIds, refreshKey, triggerRefresh }}
-        >
-            <div className="grid grid-cols-1 md:grid-cols-12 bg-white lg:p-0 md:p-4 p-2 lg:border-b">
-                <div className="lg:col-span-4 md:col-span-12 border-r lg:pb-6">
-                    <LeftForm onSuccess={onSuccess} />
-                </div>
-                <div className="lg:col-span-8 md:col-span-12">
-                    <RightPersonnelPanel />
-                </div>
+        <DeploymentContext.Provider value={{ selectedIds, setSelectedIds, refreshKey, triggerRefresh }}>
+            <Button size="sm" className="m-2 bg-neutral-700 rounded-full " onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
+            <div className="grid grid-cols-1 md:grid-cols-12 bg-white lg:p-0 md:p-4 p-2 lg:border-b space-x-1 mx-1">
+                <div className="lg:col-span-4 md:col-span-12 border-r lg:pb-6"><LeftForm onSuccess={onSuccess} /></div>
+                <div className="lg:col-span-8 md:col-span-12"><RightPersonnelPanel /></div>
             </div>
         </DeploymentContext.Provider>
     );
@@ -172,14 +171,15 @@ const leftFormSchema = z.object({
 type LeftFormValues = z.infer<typeof leftFormSchema>;
 
 function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
-    const { selectedIds, setSelectedIds, triggerRefresh } =
-        useContext(DeploymentContext);
+    const { selectedIds, setSelectedIds, triggerRefresh } = useContext(DeploymentContext);
     const [deploy_id, setDeployId] = useState<any[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [districts, setDistricts] = useState<any[]>([]);
     const [facilities, setFacilities] = useState<any[]>([]);
     const [outbreaks, setOutbreaks] = useState<any[]>([]);
     const session = useSession();
+    const navigate = useNavigate();
+    const [assignDistrict, setAssignDistrict] = useState<any[]>([]);
     const [personnelList, setPersonnelList] = useState<any[]>([]); // used for team lead only
 
     useEffect(() => {
@@ -195,7 +195,6 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             setDistricts([...d]);
             setFacilities([...f]);
             setOutbreaks([...o]);
-            console.log(i)
             setDeployId([...i])
         };
         load();
@@ -292,9 +291,9 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             api.sendNotification(
                 session.user.id,
                 {
-                    title: "Deployment Successful",
-                    message: "Healthcare workers successfully deployed",
-                    type: "success",
+                    title: "New Deployments",
+                    message: `${data.length} Healthcare ${(data.length == 1) ? "worker was" : "workers were"} deployed to ${assignDistrict} District`,
+                    type: "Deployment",
                     metadata: {
                         user: session.user,
                         activity: ""
@@ -322,12 +321,12 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
         // Clear right-panel selection via context
         setSelectedIds([]);
         form.reset();
+        navigate("/dashboard/deployments");
     }
 
     return (
-        <div className="space-y-6 p-2 bg-white border-r-1 border-none w-full lg:px-4">
+        <div className="space-y-6 p-2 bg-white border-1 rounded-lg w-full lg:px-4">
             <h2 className="text-lg font-semibold">New Deployment</h2>
-
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     {/* Dates */}
@@ -392,7 +391,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                                         <SelectContent>
                                             <SelectItem value="none">No district</SelectItem>
                                             {districts.map((d) => (
-                                                <SelectItem key={d.id} value={d.id}>
+                                                <SelectItem key={d.id} value={d.id} onClick={()=>setAssignDistrict(d.name)}>
                                                     {d.name}
                                                 </SelectItem>
                                             ))}
@@ -543,7 +542,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
 function RightPersonnelPanel() {
     type SortDir = "asc" | "desc" | null;
 
-    const [sortBy, setSortBy] = useState<"name" | "status" | null>(null);
+    const [sortBy, setSortBy] = useState<"name" | "trainings" | "role" | null>(null);
     const [sortDir, setSortDir] = useState<SortDir>(null);
 
     const { selectedIds, setSelectedIds } = useContext(DeploymentContext);
@@ -555,13 +554,23 @@ function RightPersonnelPanel() {
     const [filterValue, setFilterValue] = useState("all");
     const [selectedRows, setSelectedRows] = useState(new Set<string>());
     const [selectAll, setSelectAll] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const SORT_FIELDS = {
-        name: (p: any) => `${p.first_name ?? ""} ${p.last_name ?? ""}`.toLowerCase(),
-        status: (p: any) => p.metadata?.worker_status?.[1] ?? "",
+        name: (p: any) =>
+            `${p.first_name ?? ""} ${p.last_name ?? ""}`.toLowerCase(),
+
+        trainings: (p: any) =>
+            (p?.trainings || []).join(", ").toLowerCase(),
+
+        role: (p: any) =>
+            (p?.role ?? "").toLowerCase(),
     };
 
+
+
     useEffect(() => {
+        setIsLoading(true);
         const load = async () => {
             const [p, f] = await Promise.all([
                 api.listPersonnelMetaWorker().catch(() => []),
@@ -571,6 +580,7 @@ function RightPersonnelPanel() {
             // setFacilities(f || []);
         };
         load();
+        setIsLoading(false);
     }, []);
 
     // keep local selectedRows in sync when context selectedIds changes
@@ -643,7 +653,7 @@ function RightPersonnelPanel() {
                             columnKey,
                         }: {
         label: string;
-        columnKey: "name" | "status";
+        columnKey: "name" | "trainings" | "role";
     }) {
         return (
             <div className="flex items-center justify-between gap-1">
@@ -725,104 +735,103 @@ function RightPersonnelPanel() {
     };
 
     return (
-        <div className="p-2 md:p-4 lg:px-5 bg-white w-full rounded-xl overflow-x-auto h-full">
-
-
+        <div className="p-2 md:p-4 lg:px-5 bg-white w-full border-1 rounded-lg overflow-x-auto h-full">
             {/* Table */}
             <div className="flex items-center justify-between w-full mb-3 gap-2">
                 {/*<div className="text-sm mr-auto text-neutral-600 w-full">{filtered.length} results</div>*/}
                 {/* Search (full width) */}
-                <div className="hidden md:block w-full"><Input placeholder="Search by full name..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full" /></div>
-                {/* Unified filter type + value */}
-                <Select value={filterType} onValueChange={(v) => { setFilterType(v || "all"); setFilterValue("all"); }}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Filter type" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="qualification">Qualification</SelectItem>
-                        <SelectItem value="district">District</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="hidden md:block w-full">
+                    <InputGroup className="w-full">
+                        <InputGroupInput value={search} onChange={(e) => setSearch(e.target.value)} className="w-full" placeholder="Search..." />
+                        <InputGroupAddon>
+                            <Search />
+                        </InputGroupAddon>
+                        <InputGroupAddon align="inline-end">
+                            <Select value={filterType} onValueChange={(v) => { setFilterType(v || "all"); setFilterValue("all"); }}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Filter type" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All</SelectItem>
+                                    <SelectItem value="qualification">Qualification</SelectItem>
+                                    <SelectItem value="district">District</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </InputGroupAddon>
 
-                <Select value={filterValue} onValueChange={(v) => setFilterValue(v || "all")}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Filter value" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        {filterType === "qualification" && qualificationOptions.map((q) => <SelectItem key={q} value={q}>{q}</SelectItem>)}
-                        {filterType === "district" && districtOptions.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+                        <InputGroupAddon align="inline-end">
+                            <Select value={filterValue} onValueChange={(v) => setFilterValue(v || "all")}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Filter value" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All</SelectItem>
+                                    {filterType === "qualification" && qualificationOptions.map((q) => <SelectItem key={q} value={q}>{q}</SelectItem>)}
+                                    {filterType === "district" && districtOptions.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </InputGroupAddon>
+
+                    </InputGroup>
+                </div>
+                {/* Unified filter type + value */}
+
+
             </div>
 
-            <div className="border rounded-xl overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-10">
-                                <input
-                                    type="checkbox"
-                                    checked={selectAll}
-                                    onChange={toggleSelectAll}
-                                />
-                            </TableHead>
+            <div className="overflow-x-auto border border-neutral-200 rounded-lg ">
+                {/* THIS is the scrolling container */}
+                <div className="overflow-y-auto max-h-100 scroll-p-2 my-3">
+                    <Table className="w-full px-2">
+                        <TableHeader>
+                            <TableRow className="sticky top-0 z-20 bg-white shadow-sm">
+                                <TableHead className="w-10 bg-white">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectAll}
+                                        onChange={toggleSelectAll}
+                                    />
+                                </TableHead>
 
-                            <TableHead>
-                                <SortHeader label="Full name" columnKey="name" />
-                            </TableHead>
+                                <TableHead className="bg-white">
+                                    <SortHeader label="Full name" columnKey="name" />
+                                </TableHead>
 
-                            <TableHead>
-                                <SortHeader label="Status" columnKey="status" />
-                            </TableHead>
+                                <TableHead className="bg-white">
+                                    <SortHeader label="Trainings" columnKey="trainings" />
+                                </TableHead>
 
-                            <TableHead>Qualifications</TableHead>
-                            <TableHead>Competencies</TableHead>
-                        </TableRow>
-                    </TableHeader>
+                                <TableHead className="bg-white">
+                                    <SortHeader label="Role" columnKey="role" />
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
 
-                    <TableBody>
-                        {filtered.map((p) => {
-                            const status = p.metadata?.worker_status?.[1] ?? "—";
-                            return (
+                        <TableBody>
+                            {filtered.map((p) => (
                                 <TableRow key={p.id} className="hover:bg-neutral-50">
                                     <TableCell>
-                                        <input
+                                        {!isLoading ? <input
                                             type="checkbox"
                                             checked={selectedRows.has(p.id)}
                                             onChange={() => toggleRow(p.id)}
-                                        />
+                                        /> : <Loader2 className="animate-spin" />}
                                     </TableCell>
 
-                                    <TableCell className="font-medium">
-                                        {p.first_name} {p.last_name}
+                                    <TableCell className="text-xs truncate">
+                                        {!isLoading ? `${p.first_name} ${p.last_name}` : <Loader2 className="animate-spin" />}
                                     </TableCell>
 
-                                    <TableCell>
-            <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    status === "Deployed"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : status === "Available"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-neutral-100 text-neutral-700"
-                }`}
-            >
-              {status}
-            </span>
+                                    <TableCell className="text-xs max-w-40 truncate">
+                                        {!isLoading ? `${(p?.trainings || []).join(", ") || "—"}` : <Loader2 className="animate-spin" />}
                                     </TableCell>
 
-                                    <TableCell className="text-xs">
-                                        {(p.qualifications || []).join(", ") || "—"}
-                                    </TableCell>
-
-                                    <TableCell className="text-xs">
-                                        {(p.metadata?.competencies || []).join(", ") || "—"}
+                                    <TableCell className="text-xs truncate">
+                                        {!isLoading ? `${p?.role || "—"}` : <Loader2 className="animate-spin" />}
                                     </TableCell>
                                 </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                </Table>
-
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
+
         </div>
     );
 }

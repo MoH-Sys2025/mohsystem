@@ -1,11 +1,13 @@
 ::-webkit-scrollbar {
-    width: 5px;   /* vertical */
-    height: 3px;  /* horizontal */
+    width: 4px;   /* vertical */
+    height: 4px;  /* horizontal */
+    border-radius: 10px;
 }
 
 ::-webkit-scrollbar-track {
     background: #d1c9d8;
     border-radius: 10px;
+    width: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -14,7 +16,7 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #16cf83;
+    background: #363d50;
 }
 
 .leaflet-tooltip.district-label {
