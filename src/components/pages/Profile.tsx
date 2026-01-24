@@ -19,6 +19,9 @@ import {Badge} from "@/components/ui/badge.tsx";
 import {useSelectedMOHData} from "@/components/DataContext.tsx";
 import {Competencies} from "../UserCharts.tsx";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import GobackBtn from "../GobackBtn.tsx";
+
 interface HCWProfileProps {
     onNavigate?: () => void;
 }
@@ -29,26 +32,30 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
     const [status, setStatus] = useState([])
     const [linkedSystems, setLinks] = useState([])
     const [cadle, setCadle] = useState("")
-    const { selectedMOHData } = useSelectedMOHData();
+
+    const { selectedMOHData, setSelectedMOHData } = useSelectedMOHData();
     const navigate = useNavigate();
-    const data = selectedMOHData;
+    const location = useLocation();
+
+// prefer navigation state, fallback to context
+    const data = location.state?.selected || selectedMOHData;
+
     if (!data) return <p>No worker selected</p>;
 
-    useEffect(() => {
 
-        // Update worker first
+    useEffect(() => {
+        if (!data) return;
+
         setWorker(data);
-        console.log(data.trainings)
+
         setLinks([
             ["DHIS2", data.dhis2_sync],
-            ["IHRMIS", data.ihrmis_sync]
+            ["IHRMIS", data.ihrmis_sync],
         ]);
 
-        setAge(data.metadata.age);
+        setAge(data?.metadata?.age ?? 0);
 
         const load = async () => {
-
-            // Load cadre data (must await, must use data.cadre_id)
             if (data.cadre_id) {
                 const cadreData = await api.listCadresEq(data.cadre_id);
                 if (cadreData && cadreData.length > 0) {
@@ -58,7 +65,8 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
         };
 
         load();
-    }, []);
+    }, [data]); // 👈 DEPEND ON DATA
+
 
     const capitalize = (name) => {
         if (!name) return "";
@@ -88,14 +96,14 @@ export default function HealthWorkerProfile({onNavigate}: HCWProfileProps) {
     const imgSrc = (capitalize(worker?.gender) === 'Female') ? "/portrait_Nurse.jpg":"/male_nurse.png"
     return (
         <div className="w-full min-h-screen bg-white">
-            <Button size="sm" className="p-1 bg-neutral-700 rounded-full m-2" onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
             <div className="max-w-full w-full grid grid-cols-1 md:grid-cols-12 gap-0">
                 {/* Profile Card */}
-                <Card className=" md:col-span-4 col-span-1 m-1 py-2 rounded-lg px-0.5">
-                    <div className="md:overflow-y-auto h-full py-3">
-                        <div className="md:max-h-100 md:h-100">
+                <Card className=" md:col-span-4 col-span-1 m-1 pb-2 pt-1 rounded-lg px-0.5">
+                    <GobackBtn />
+                    <div className="md:overflow-y-auto h-full">
+                        <div className="">
                             <CardHeader>
-                                <CardTitle className=" font-semibold flex flex-row gap-2 items-center">Health Worker Profile<Edit3 className="ml-auto mt-1" size={14} /></CardTitle>
+                                <CardTitle className=" font-semibold flex flex-row gap-2 items-center">Health Worker Profile<Edit3 className="ml-auto" size={14} /></CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-col items-center text-center justify-center">

@@ -130,28 +130,27 @@ export function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) {
           </form>
 
           <div className="mt-3 pt-3 border-t border-neutral-200">
-            <p className="text-sm text-neutral-500 text-center">
-              Need help? Contact{' '}
-              <a href="mailto:charlesbita@health.gov.mw" className="text-neutral-900 hover:text-neutral-700 font-medium">
-                support@health.gov.mw
-              </a>
-            </p>
-              <div className="mt-2 text-center">
+            {/*<p className="text-sm text-neutral-500 text-center">*/}
+            {/*  Need help? Contact{' '}*/}
+            {/*  <a href="mailto:charlesbita@health.gov.mw" className="text-neutral-900 hover:text-neutral-700 font-medium">*/}
+            {/*    support@health.gov.mw*/}
+            {/*  </a>*/}
+            {/*</p>*/}
+              <div className="text-center">
                   <p className="text-sm text-neutral-500">
                       Don’t have an account?{" "}
-                      <button
+                      <Button variant="ghost" size="sm"
                           type="button"
                           onClick={onCreateAccount}
-                          className="text-neutral-900 font-semibold hover:underline"
-                      >
+                          className="text-neutral-900 font-semibold hover:underline">
                           Create account
-                      </button>
+                      </Button>
                   </p>
               </div>
           </div>
         </div>
 
-          <p className="text-sm text-neutral-500 text-center mt-5">
+          <p className="text-sm text-neutral-500 text-center mt-2">
           Ministry of Health, Malawi · Outbreak Response Division
         </p>
       </div>

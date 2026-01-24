@@ -86,8 +86,7 @@ export function WorkforceRegistry({ onNavigate }: WorkforceRegProps) {
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
     const [exportType, setExportType] = useState<"pdf" | "csv" | "excel" | "txt" | null>(null);
     const [fileName, setFileName] = useState("Healthcare Employees Registry");
-    const [selectedColumns, setSelectedColumns] = useState(EXPORT_COLUMNS.map(c => c.label) // default: all columns selected
-    );
+    const [selectedColumns, setSelectedColumns] = useState(EXPORT_COLUMNS.map(c => c.label));
 
     const [exportKey, setExportKey] = useState(0);
 
@@ -760,7 +759,7 @@ return (
                                                         }}
                                                     >
                                                         <User2 size={11} className="text-xs text-gray-600" /> View
-                                                        profile
+                                                        Profile
                                                     </Button>
                                                 </PopoverContent>
                                             </Popover>

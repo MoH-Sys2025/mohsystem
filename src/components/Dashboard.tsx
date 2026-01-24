@@ -8,7 +8,7 @@ interface DashboardProps {
 
 export function Dashboard({ onLogout }: DashboardProps) {
     return (
-        <div className="min-h-screen bg-neutral-50 flex">
+        <div className="min-h-screen flex">
             <Sidebar onLogout={onLogout} />
 
             <div className="flex-1 pl-16 lg:pl-64">

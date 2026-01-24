@@ -44,7 +44,7 @@ export function ActivityFeed({className}: ActivityProps) {
                 setNotifications(data || []);
                 setActivities(data || []);
             } catch (err) {
-                console.error(err);
+                throw err;
             } finally {
                 setLoading(false);
             }

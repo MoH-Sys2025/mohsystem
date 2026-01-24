@@ -35,6 +35,7 @@ import {ArrowLeft, ChevronDown, Loader, Loader2, MapPin, Search} from "lucide-re
 import {useNavigate} from "react-router-dom";
 import {ScrollArea} from "../ui/scroll-area.tsx";
 import {InputGroup, InputGroupAddon, InputGroupInput, InputGroupText} from "../ui/input-group.tsx";
+import GobackBtn from "../GobackBtn.tsx";
 
 /**
  * Deployment form:
@@ -127,24 +128,88 @@ const DeploymentContext = createContext<DeploymentContextType>({
     triggerRefresh: () => {},
 });
 
+function StepItem({ active, label, index }: { active: boolean; label: string; index: number }) {
+    return (
+        <div className="flex items-center gap-2">
+            <div
+                className={`h-7 w-7 rounded-full flex items-center justify-center text-sm font-medium
+          ${active ? "bg-purple-600 text-white" : "bg-neutral-200 text-neutral-600"}`}
+            >
+                {index}
+            </div>
+            <span className={`text-sm ${active ? "text-purple-600 font-medium" : "text-neutral-500"}`}>
+        {label}
+      </span>
+        </div>
+    );
+}
 
 export default function NewDeploymentForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
-    const navigate = useNavigate();
+    const [step, setStep] = useState<1 | 2>(1);
 
     const triggerRefresh = () => setRefreshKey((k) => k + 1);
 
     return (
         <DeploymentContext.Provider value={{ selectedIds, setSelectedIds, refreshKey, triggerRefresh }}>
-            <Button size="sm" className="m-2 bg-neutral-700 rounded-full " onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
-            <div className="grid grid-cols-1 md:grid-cols-12 bg-white lg:p-0 md:p-4 p-2 lg:border-b space-x-1 mx-1">
-                <div className="lg:col-span-4 md:col-span-12 border-r lg:pb-6"><LeftForm onSuccess={onSuccess} /></div>
-                <div className="lg:col-span-8 md:col-span-12"><RightPersonnelPanel /></div>
+            <div className="min-h-screen bg-neutral-50 p-6">
+
+                {/* STEP HEADER */}
+                <div className="flex items-center gap-6 mb-8">
+                    <StepItem active={step === 1} label="Deployment details" index={1} />
+                    <div className="h-px w-10 bg-neutral-300" />
+                    <StepItem active={step === 2} label="Select personnel" index={2} />
+                </div>
+
+                {/* STEP 1 — FULL PAGE */}
+                {step === 1 && (
+                    <div className=" mx-auto bg-white rounded-xl shadow-sm p-6">
+                        <h2 className="text-lg font-semibold mb-2">About Deployment</h2>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            Enter the basic deployment details to proceed further
+                        </p>
+
+                        <LeftForm onSuccess={onSuccess} />
+
+                        <div className="mt-6 flex justify-end">
+                            <Button onClick={() => setStep(2)}>
+                                Continue →
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* STEP 2 — FULL PAGE */}
+                {step === 2 && (
+                    <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold">Select Personnel</h2>
+                            <Button variant="ghost" onClick={() => setStep(1)}>← Back</Button>
+                        </div>
+
+                        <RightPersonnelPanel />
+
+                        {/* FINAL SUBMIT BUTTON */}
+                        <div className="mt-6 flex justify-end">
+                            <Button
+                                form="deployment-form"
+                                type="submit"
+                                className="px-8"
+                            >
+                                Create Deployment
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+
             </div>
         </DeploymentContext.Provider>
     );
 }
+
+
 
 
 /* ----------------------------- LEFT FORM ----------------------------- */
@@ -197,7 +262,9 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
             setOutbreaks([...o]);
             setDeployId([...i])
         };
+        setLoading(true)
         load();
+        setLoading(false)
     }, []);
 
     const form = useForm<LeftFormValues>({
@@ -328,7 +395,7 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
         <div className="space-y-6 p-2 bg-white border-1 rounded-lg w-full lg:px-4">
             <h2 className="text-lg font-semibold">New Deployment</h2>
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form id="deployment-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     {/* Dates */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
@@ -526,12 +593,6 @@ function LeftForm({ onSuccess }: { onSuccess?: (data?: any) => void }) {
                             </FormItem>
                         )}
                     />
-
-                    <div className="flex gap-2">
-                        <Button className="w-full flex flex-row gap-2 items-center" disabled={loading} type="submit">
-                            {loading ? <><Loader2 className="animate-spin" /> Saving...</> : "Create Deployment"}
-                        </Button>
-                    </div>
                 </form>
             </Form>
         </div>
@@ -757,9 +818,9 @@ function RightPersonnelPanel() {
                             </Select>
                         </InputGroupAddon>
 
-                        <InputGroupAddon align="inline-end">
+                        <InputGroupAddon align="inline-end" >
                             <Select value={filterValue} onValueChange={(v) => setFilterValue(v || "all")}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="Filter value" /></SelectTrigger>
+                                <SelectTrigger className="w-full text-xs"><SelectValue placeholder="Filter value" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All</SelectItem>
                                     {filterType === "qualification" && qualificationOptions.map((q) => <SelectItem key={q} value={q}>{q}</SelectItem>)}
@@ -775,9 +836,9 @@ function RightPersonnelPanel() {
 
             </div>
 
-            <div className="overflow-x-auto border border-neutral-200 rounded-lg ">
+            <div className="overflow-x-auto border border-neutral-200 rounded-lg px-0.5 py-2">
                 {/* THIS is the scrolling container */}
-                <div className="overflow-y-auto max-h-100 scroll-p-2 my-3">
+                <div className="overflow-y-auto max-h-100 min-h-80 scroll-p-2">
                     <Table className="w-full px-2">
                         <TableHeader>
                             <TableRow className="sticky top-0 z-20 bg-white shadow-sm">

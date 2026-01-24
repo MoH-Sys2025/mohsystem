@@ -50,6 +50,9 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Checkbox } from "../ui/checkbox";
 import {Label} from "../ui/label.tsx";
+import {toast} from "sonner";
+import {ScrollBar} from "../ui/scroll-area.tsx";
+import {Scrollbar} from "@radix-ui/react-scroll-area";
 
 /* ===================== TYPES ===================== */
 interface TrainingProps {
@@ -304,8 +307,7 @@ export function Trainings({ onNavigate, personnelId }: TrainingProps) {
             .eq("id", pendingPersonnelId); // use row id
 
         if(error) {
-            console.log(error);
-            return;
+            throw error;
         }
 
         const { data: row, error: fetchErr } = await supabase
@@ -331,7 +333,7 @@ export function Trainings({ onNavigate, personnelId }: TrainingProps) {
 
         setIsLoading(false);
 
-        if (error) console.error("Failed to update status:", error);
+        if (error) toast.error("Failed to update status:");
 
         setConfirmOpen(false);
         setPendingStatus(null);
@@ -342,7 +344,7 @@ export function Trainings({ onNavigate, personnelId }: TrainingProps) {
     const fetchTrainings = async () => {
         const today = new Date().toISOString().split("T")[0];
 
-        const { data: upcomingData } = await supabase
+        const { data: upcomingData, error } = await supabase
             .from("trainings")
             .select(`
             id,
@@ -350,9 +352,7 @@ export function Trainings({ onNavigate, personnelId }: TrainingProps) {
             start_date,
             end_date,
             location,
-            training_participants(personnel_id)
-          `)
-            .gte("start_date", today)
+            training_participants(personnel_id)`)
             .order("start_date");
 
         setUpcoming(
@@ -463,7 +463,6 @@ export function Trainings({ onNavigate, personnelId }: TrainingProps) {
                 )
               `)
             .eq("training_id", training.id);
-
         setParticipants(
             (data || [])
                 .filter((p: any) => p.personnel)
@@ -706,23 +705,23 @@ ${participants
     /* ===================== RENDER ===================== */
     return (
         <div className="space-y-8 p-2 md:p-6 p py-2">
-            {/* HEADER */}
-            <div className="flex justify-between">
-                <div className="w-full">
-                    <div className="flex flex-row justify-between items-center py-6 md:py-2 w-full">
-                        <h1 className="text-lg font-semibold">Trainings</h1>
-                        <Button onClick={() => onNavigate("form trainings")} variant="outline" className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg flex items-center gap-2 text-black hover:bg-gray-200">
-                            <Plus className="w-4 h-4" />
-                            Create Training
-                        </Button>
-                    </div>
-                    <p className="text-sm text-neutral-500">
-                        Manage training programs and certifications
-                    </p>
-                </div>
-            </div>
+            {/*/!* HEADER *!/*/}
+            {/*<div className="flex justify-between">*/}
+            {/*    <div className="w-full">*/}
+            {/*        <div className="flex flex-row justify-between items-center py-6 md:py-2 w-full">*/}
+            {/*            <h1 className="text-lg font-semibold">Trainings</h1>*/}
+            {/*            <Button onClick={() => onNavigate("form trainings")} variant="outline" className="text-sm cursor-pointer bg-gray-100 border-2 px-3 border-dashed rounded-lg flex items-center gap-2 text-black hover:bg-gray-200">*/}
+            {/*                <Plus className="w-4 h-4" />*/}
+            {/*                Create Training*/}
+            {/*            </Button>*/}
+            {/*        </div>*/}
+            {/*        <p className="text-sm text-neutral-500">*/}
+            {/*            Manage training programs and certifications*/}
+            {/*        </p>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
-            {/* UPCOMING TRAININGS */}
+            {/* TRAININGS */}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_480px] gap-2 h-[520px]">
                 {/* LEFT PANEL */}
                 <div className="bg-white border rounded-xl flex flex-col">
@@ -838,7 +837,7 @@ ${participants
                                                             {p.first_name} {p.last_name}
                                                         </Label>
                                                         <span className="text-xs ml-auto bg-green-200 text-green-800 font-semibold p-1 py-0.5 rounded-sm">
-                                                        {p.metadata.district}
+                                                        {p?.metadata.district}
                                                       </span>
                                                     </div>
                                                 </div>
@@ -851,9 +850,7 @@ ${participants
                                 <div className="mt-1 flex justify-end gap-2">
                                     <Button
                                         onClick={() => setSelectedTraining(null)}
-                                        className="text-xs px-2 h-7"
-                                        variant="outline"
-                                    >
+                                        className="text-xs px-2 h-7" variant="outline">
                                         Cancel
                                     </Button>
                                     <Button
@@ -861,11 +858,7 @@ ${participants
                                         size="xs"
                                         variant="outline"
                                         className="text-xs px-2 h-7"
-                                        onClick={() => {
-                                            handleRegisterSelected();
-                                            setSelectedTraining(null);
-                                        }}
-                                    >
+                                        onClick={() => {handleRegisterSelected(); setSelectedTraining(null);}}>
                                         Register <span className={`flex flex-row gap-1 py-0.5 px-2 bg-gray-200 rounded-sm ${(selectedPersonnel.size > 0) ? 'text-green-600':''}`}><Users size={13} className={`text - sm `}  /> {selectedPersonnel.size}</span>
                                     </Button>
                                 </div>
@@ -951,7 +944,7 @@ ${participants
                     {/* Header with training info */}
                     <div className="px-4 py-3 pb-0 border-b flex flex-col gap-1">
                         {!activeTraining ? (
-                            <p className="text-neutral-500 text-sm mb-2 italic">Select a training</p>
+                            <p className="text-neutral-500 text-sm mb-2 ">Select a training</p>
                         ) : (
                             <>
                                 {/* Top row: title left, participants + icons right */}

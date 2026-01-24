@@ -930,7 +930,7 @@ export function exportPDF(data: any[], name: string, selectedColumns: string[]) 
     const pageWidth = doc.internal.pageSize.getWidth();
     doc.addImage("/logo.png", "PNG",  (pageWidth - imgWidth) / 2, 10, imgWidth, imgHeight);
 
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.text("MALAWI OUTBREAK AND EMERGENCY RESPONSE", 105, 42, { align: "center" });
     doc.setFontSize(12);
     doc.text("Healthcare Employees' Registry", 105, 49, { align: "center"});
@@ -1142,7 +1142,6 @@ export async function getNotificationsForWeek(
         throw error;
     }
 
-    console.log(data)
     return data;
 }
 

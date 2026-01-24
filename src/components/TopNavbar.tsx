@@ -17,6 +17,8 @@ import {toast} from "sonner";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert.tsx";
 import {useSession} from "@/contexts/AuthProvider.tsx";
 import type {User} from "@supabase/supabase-js";
+import SearchAll from "./SearchAll.tsx";
+import {useNavigate} from "react-router-dom";
 
 export function TopNavbar() {
     const [notifications, setNotifications] = useState([]);
@@ -51,15 +53,8 @@ export function TopNavbar() {
     return (
         <header className="bg-white border-b border-neutral-200 px-4 md:px-6 h-16 flex items-center justify-between">
             {/* LEFT — SEARCH BAR */}
-            <div className="flex-1 max-w-full md:max-w-xl">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <Input
-                        type="text"
-                        placeholder="Search healthcare workers, documents, deployments..."
-                        className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-md text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                </div>
+            <div className="flex-1 max-w-full ">
+                <SearchAll />
             </div>
 
             {/* RIGHT — NOTIFICATIONS + PROFILE */}

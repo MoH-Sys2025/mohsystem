@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { ArrowRight, ArrowLeft, Download } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -16,6 +16,7 @@ import {
     CommandInput,
     CommandItem,
 } from "@/components/ui/command";
+import GobackBtn from "./components/GobackBtn.tsx";
 
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
@@ -566,9 +567,7 @@ export default function ExcelUploader() {
                     </div>
 
                     <div className="flex justify-between mt-4">
-                        <Button variant="secondary" onClick={() => setStep(1)} className="flex items-center gap-2">
-                            <ArrowLeft /> Go Back
-                        </Button>
+                        <GobackBtn />
 
                         <Button variant="default" onClick={() => submitPersonnel()} className="flex items-center gap-2">
                             Submit

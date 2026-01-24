@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import {ArrowRight, ArrowLeft, Download, Trash2, Search, Users, UserCheck2, Loader2} from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -39,6 +39,7 @@ import {
 import {useSession} from "@/contexts/AuthProvider.tsx";
 import {useNavigate} from "react-router-dom";
 import {showAlert} from "./NotificationsAlerts.tsx";
+import GobackBtn from "./GobackBtn.tsx";
 
 export default function ExcelUploader() {
     const [rows, setRows] = useState([]);
@@ -462,7 +463,7 @@ export default function ExcelUploader() {
                 <div>
                     <div className={`transition-all duration-500 ${uploaded ? "flex justify-start" : "flex justify-center items-center h-[60vh]"}`}>
                         {!uploaded && <div className="p-2 flex flex-col md:flex-row gap-2 items-center justify-center">
-                            <Button size="sm" className="p-1 bg-neutral-700 rounded-full " onClick={()=>{navigate(-1)}}><ArrowLeft className="text-white" /> Go back</Button>
+                            <GobackBtn />
                             {/* Upload Button */}
                             <Button
                                 asChild
@@ -799,13 +800,7 @@ export default function ExcelUploader() {
                     </div>
 
                     <div className="flex justify-between mt-4">
-                        <Button variant="secondary" onClick={() => setStep(1)} className="flex items-center gap-2">
-                            <ArrowLeft /> Go Back
-                        </Button>
-
-                        <Button variant="default" onClick={() => submitPersonnel()} className="flex items-center gap-2">
-                            {isLoading && <Loader2/>}Submit
-                        </Button>
+                        <GobackBtn />
                     </div>
                 </div>
             )}
